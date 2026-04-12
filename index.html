@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EZ 环游世界梦 — Travel Planner v4</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg:#faf5f0;--s1:rgba(255,255,255,.58);--s2:rgba(255,248,243,.55);--s3:rgba(228,213,202,.28);
+--acc:#c87b62;--acc2:#b56a52;--accL:rgba(200,123,98,.10);
+--grn:#6aab90;--grnL:rgba(106,171,144,.10);--org:#c89b6a;--orgL:rgba(200,155,106,.10);
+--red:#be6e6e;--redL:rgba(190,110,110,.10);--blu:#6a96b5;--bluL:rgba(106,150,181,.10);
+--txt:#3d3530;--t2:#8c7e74;--t3:#b5a99e;--bdr:rgba(195,178,165,.30);
+--r:16px;--sh:0 3px 18px rgba(160,135,115,.10);--sh2:0 1px 6px rgba(160,135,115,.06);
+}
+html{font-size:18px}
+body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;line-height:1.55}
+button{cursor:pointer;border:none;font-family:inherit;transition:.15s}
+input,textarea,select{font-family:inherit;background:rgba(255,255,255,.65);color:var(--txt);border:1px solid var(--bdr);border-radius:10px;padding:7px 12px;outline:none;font-size:.85rem;transition:.15s}
+input:focus,textarea:focus,select:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--accL)}
+textarea{resize:vertical}a{color:var(--acc2)}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px}
+
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;background:rgba(250,245,240,.85);backdrop-filter:blur(18px);border-bottom:1px solid var(--bdr);padding:0 20px;display:flex;align-items:center;gap:4px;height:54px;overflow-x:auto}
+.nav-logo{font-size:1.1rem;font-weight:800;color:var(--acc2);margin-right:14px;white-space:nowrap}
+.nt{padding:7px 16px;border-radius:22px;background:transparent;color:var(--t2);font-size:.82rem;font-weight:500;white-space:nowrap}
+.nt:hover{background:var(--accL);color:var(--txt)}.nt.on{background:var(--acc);color:#fff}
+
+/* LAYOUT */
+.pg{display:none;padding:20px 24px;max-width:1460px;margin:0 auto}.pg.on{display:block}
+.c{background:var(--s1);backdrop-filter:blur(10px);border:1px solid var(--bdr);border-radius:var(--r);padding:18px;margin-bottom:14px;box-shadow:var(--sh)}
+.ct{font-size:.9rem;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+h2{font-size:1.25rem;font-weight:800;margin-bottom:18px;color:var(--acc2)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:960px){.g2,.g3,.g4{grid-template-columns:1fr}}
+.fb{display:flex;justify-content:space-between;align-items:center}
+.sb{max-height:260px;overflow-y:auto;padding-right:4px}
+.ss{max-height:190px;overflow-y:auto;padding-right:4px}
+
+/* STAT */
+.st{text-align:center;padding:16px 10px}
+.sv{font-size:1.55rem;font-weight:800;margin:3px 0}
+.sl{font-size:.72rem;color:var(--t2);letter-spacing:.3px;text-transform:uppercase}
+
+/* PROGRESS */
+.pb{height:8px;background:var(--s3);border-radius:4px;overflow:hidden}
+.pf{height:100%;border-radius:4px;transition:width .5s}
+.pl{display:flex;justify-content:space-between;font-size:.7rem;color:var(--t2);margin-top:3px}
+
+/* BTN */
+.btn{padding:6px 18px;border-radius:22px;font-size:.78rem;font-weight:500}
+.bp{background:var(--acc);color:#fff}.bp:hover{background:var(--acc2)}
+.bs{background:var(--s3);color:var(--txt)}.bs:hover{background:var(--bdr)}
+.bd{background:var(--red);color:#fff;font-size:.72rem;padding:4px 10px}
+.bsm{padding:4px 12px;font-size:.72rem}
+.bg{background:transparent;color:var(--acc2);padding:3px 8px;font-size:.72rem;border-radius:8px}.bg:hover{background:var(--accL)}
+
+/* TAG */
+.tg{display:inline-block;padding:2px 9px;border-radius:12px;font-size:.68rem;font-weight:600;letter-spacing:.2px}
+.tok{background:var(--grnL);color:var(--grn)}.tpl{background:var(--orgL);color:var(--org)}.twr{background:var(--redL);color:var(--red)}
+.tsc{background:var(--bluL);color:var(--blu)}
+
+/* MODAL */
+.mbg{position:fixed;inset:0;background:rgba(61,53,48,.32);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center}
+.mbg.show{display:flex}
+.md{background:var(--bg);border:1px solid var(--bdr);border-radius:20px;padding:24px;width:94%;max-width:560px;max-height:82vh;overflow-y:auto;box-shadow:0 10px 50px rgba(0,0,0,.12)}
+.md h3{font-size:1.05rem;margin-bottom:14px;color:var(--acc2)}
+.fr{margin-bottom:10px}.fr label{display:block;font-size:.72rem;color:var(--t2);margin-bottom:3px;font-weight:600}
+.fr input,.fr textarea,.fr select{width:100%}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ma{display:flex;gap:8px;margin-top:14px;justify-content:flex-end}
+
+/* REGION */
+.rg{margin-bottom:16px;border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh2)}
+.rh{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--s2);cursor:pointer;user-select:none}
+.rh:hover{background:var(--s3)}
+.ra{transition:transform .2s;font-size:.65rem;color:var(--t2)}.ra.open{transform:rotate(90deg)}
+.rt{font-weight:700;font-size:1rem;color:var(--acc2);flex:1}
+.rs{display:flex;gap:14px;font-size:.78rem;color:var(--t2)}
+.rb{border-top:1px solid var(--bdr)}
+
+/* ITIN */
+.it{padding:14px 18px;border-bottom:1px solid rgba(195,178,165,.18);cursor:pointer;transition:background .1s}
+.it:hover{background:var(--accL)}.it:last-child{border:none}
+.it.dragging{opacity:.35}.it.dragover{background:var(--accL);border-top:2px solid var(--acc)}
+.ir{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.inum{width:28px;height:28px;border-radius:50%;background:var(--acc);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0}
+.ix{padding:14px 18px 10px;border-bottom:1px solid rgba(195,178,165,.18);background:rgba(255,255,255,.25)}
+
+/* PLACE */
+.pi{display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid rgba(195,178,165,.12);font-size:.82rem}
+.pi:last-child{border:none}
+
+/* CHECKLIST */
+.ck{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(195,178,165,.12);font-size:.85rem}
+.ck label{display:flex;align-items:center;gap:8px;flex:1;cursor:pointer}
+.ck input[type=checkbox]{width:17px;height:17px;accent-color:var(--acc)}
+.ckt{padding:2px 8px;border-radius:8px;font-size:.65rem;font-weight:600;background:var(--accL);color:var(--acc2)}
+
+/* TODO */
+.todo{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--s2);border:1px solid var(--bdr);border-radius:10px;margin-bottom:6px;font-size:.85rem}
+.todo input[type=checkbox]{width:17px;height:17px;accent-color:var(--acc)}
+.todo.done{opacity:.45}
+
+/* BUDGET TABLE */
+.bt{width:100%;border-collapse:collapse;font-size:.78rem}
+.bt th{text-align:left;padding:6px 8px;border-bottom:2px solid var(--bdr);color:var(--t2);font-size:.7rem;font-weight:600;white-space:nowrap}
+.bt td{padding:5px 8px;border-bottom:1px solid rgba(195,178,165,.12)}
+.bt tr:hover{background:var(--accL)}
+.bt input{padding:4px 6px;width:68px;text-align:right;font-size:.78rem}
+.bt .ov{color:var(--red);font-weight:700}
+
+.nc{padding:14px;border-left:3px solid var(--acc);margin-bottom:10px}
+.rem{background:var(--orgL);border:1px solid rgba(200,155,106,.2);border-radius:10px;padding:10px 14px;margin-top:12px;font-size:.78rem;color:var(--org)}
+.calcr{padding:12px;border-radius:10px;font-size:.85rem;margin-top:10px}
+.calcok{background:var(--grnL);border:1px solid rgba(106,171,144,.2);color:#4a8a6e}
+.calcbad{background:var(--redL);border:1px solid rgba(190,110,110,.2);color:var(--red)}
+
+/* CALENDAR */
+/* DASHBOARD DRAG */
+.dw{transition:opacity .15s,border .15s;border-top:2px solid transparent}
+.dw .ct{user-select:none}
+#dboard{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#dboard .dw.g4,#dboard .dw[data-wid="stats"]{grid-column:1/-1}
+#dboard .dw>.c{margin-bottom:0}
+@media(max-width:960px){#dboard{grid-template-columns:1fr}}
+
+.cal-day{min-height:58px;border-radius:8px;padding:4px 5px;font-size:.7rem;border:1px solid transparent;cursor:default;transition:.1s}
+.cal-day.has{cursor:pointer;border-color:var(--bdr)}.cal-day.has:hover{box-shadow:0 0 0 2px var(--acc)}
+</style>
+</head>
+<body>
+<nav class="nav">
+<div class="nav-logo">🌍 EZ 环游世界梦</div>
+<button class="nt on" data-p="dashboard">Dashboard</button>
+<button class="nt" data-p="itinerary">行程</button>
+<button class="nt" data-p="calendar">日历</button>
+<button class="nt" data-p="budget">Budget</button>
+<button class="nt" data-p="checklist">Checklist</button>
+<button class="nt" data-p="notes">备註</button>
+<button class="nt" data-p="goals">目标</button>
+<button class="nt" data-p="suggestions">建议</button>
+<button class="nt" data-p="currency">汇率</button>
+</nav>
+<div class="pg on" id="pg-dashboard"></div>
+<div class="pg" id="pg-itinerary"></div>
+<div class="pg" id="pg-calendar"></div>
+<div class="pg" id="pg-budget"></div>
+<div class="pg" id="pg-checklist"></div>
+<div class="pg" id="pg-notes"></div>
+<div class="pg" id="pg-goals"></div>
+<div class="pg" id="pg-suggestions"></div>
+<div class="pg" id="pg-currency"></div>
+<div class="mbg" id="modal"><div class="md" id="mc"></div></div>
+<script>
+const CDB={'Nepal':['Kathmandu','Pokhara','Bandipur','Nagarkot','Chitwan'],'India':['New Delhi','Mumbai','Jaipur','Varanasi'],
+'Kazakhstan':['Almaty','Astana','Shymkent','Mangistau','Turkestan'],'Kyrgyzstan':['Bishkek','Karakol','Osh','Jyrgalan','Arslanbob'],
+'Georgia':['Tbilisi','Kutaisi','Batumi','Mestia','Kazbegi','Signagi','Ushguli'],'Armenia':['Yerevan','Gyumri','Dilijan'],
+'Bulgaria':['Sofia','Plovdiv','Veliko Tarnovo','Varna','Belogradchik'],'Romania':['Bucharest','Brașov','Sibiu','Cluj-Napoca','Sighișoara','Timișoara'],
+'Serbia':['Belgrade','Novi Sad','Zlatibor','Niš'],'Montenegro':['Kotor','Budva','Podgorica','Žabljak','Perast','Kolašin'],
+'Bosnia':['Sarajevo','Mostar','Jajce','Banja Luka'],'Slovenia':['Ljubljana','Bled','Bohinj','Bovec','Piran'],
+'Poland':['Kraków','Zakopane','Warsaw','Wrocław','Szczawnica'],'Czech Republic':['Prague','Olomouc','Český Krumlov','Kutná Hora'],
+'Latvia':['Riga','Sigulda','Cēsis','Kuldīga'],'Spain':['Madrid','Barcelona','Granada','Seville','Valencia','Ronda'],
+'Portugal':['Lisbon','Porto','Madeira','Sintra','Lagos'],'Malaysia':['JB','KL'],'Turkey':['Istanbul','Cappadocia'],
+'Croatia':['Dubrovnik','Split','Zagreb'],'Albania':['Tirana','Berat'],'Austria':['Vienna','Salzburg','Hallstatt'],
+'Hungary':['Budapest'],'Other':[]};
+const REG=[{n:'🏔️ 南亚',c:['Nepal','India']},{n:'🐴 中亚',c:['Kazakhstan','Kyrgyzstan']},
+{n:'🍷 高加索',c:['Georgia','Armenia']},{n:'🏰 巴尔干',c:['Bulgaria','Romania','Serbia','Montenegro','Bosnia']},
+{n:'⛰️ 中欧',c:['Slovenia','Poland','Czech Republic']},{n:'☀️ 西欧',c:['Spain','Portugal']},{n:'🏠 回家',c:['Malaysia']}];
+const CC=['#c87b62','#6aab90','#6a96b5','#a08abf','#b56a52','#b8a07a','#6ab5ae','#b56a8f','#7aab6a','#b59f6a','#6a6ab5','#b5916a','#6aab7a','#b56a6a','#8fb56a','#c9a070'];
+const CCOUNTRY={'Nepal':'#c87b62','India':'#d4a07a','Kazakhstan':'#6a96b5','Kyrgyzstan':'#7aabc8',
+'Georgia':'#a08abf','Armenia':'#bf8aaa','Bulgaria':'#6aab90','Romania':'#7ab56a',
+'Serbia':'#b5916a','Montenegro':'#6ab5ae','Bosnia':'#b8a07a','Slovenia':'#8fb56a',
+'Poland':'#c9a070','Czech Republic':'#d4956a','Latvia':'#7a8fbf','Spain':'#c87b62','Portugal':'#6a96b5','Malaysia':'#b56a52'};
+const FEST={
+'2027-01-14':{n:'Makar Sankranti',co:'Nepal',e:'🎉印度教丰收节'},
+'2027-02-12':{n:'Maha Shivaratri',co:'Nepal',e:'🕉️湿婆之夜'},
+'2027-02-26':{n:'Holi (Nepal)',co:'Nepal',e:'🎨洒红节'},
+'2027-03-08':{n:'Women\'s Day',co:'Georgia',e:'🌷格鲁吉亚超重视'},
+'2027-03-21':{n:'Nowruz',co:'Kazakhstan',e:'🌸波斯新年·中亚大庆'},
+'2027-03-22':{n:'Tbilisoba',co:'Georgia',e:'🍷第比利斯城市节'},
+'2027-04-04':{n:'Easter (Orthodox)',co:'Georgia',e:'⛪东正教复活节'},
+'2027-04-23':{n:'St George Day',co:'Georgia',e:'🏇格鲁吉亚国庆'},
+'2027-05-01':{n:'Labour Day',co:'Bosnia',e:'🎉欧洲劳动节·部分关门'},
+'2027-05-09':{n:'Europe Day',co:'Slovenia',e:'🇪🇺欧洲日'},
+'2027-06-24':{n:'San Juan',co:'Spain',e:'🔥篝火节·巴塞隆纳海滩'},
+'2027-06-13':{n:'Santo António',co:'Portugal',e:'🎉里斯本城市节'},
+'2027-07-07':{n:'San Fermín',co:'Spain',e:'🐂奔牛节·Pamplona'}
+};
+const SK='ez_trip_v9';
+let D;
+
+const S0=[
+{id:1,date:'2027-01-14',days:3,sch:false,co:'Nepal',ci:'Kathmandu',tmp:'12°C',tz:'-2h15m',tr:'Batik Air KL→Nepal',tt:'flight',tc:457.95,ts:'confirmed',food:39,stay:40,sl:'',lt:25,tick:10,oth:0,st:'confirmed',pl:[{n:'博达哈大佛塔 Boudhanath',r:'尼泊尔最大佛塔，傍晚转经时间氛围庄严'},{n:'猴庙 Swayambhunath',r:'山顶俯瞰加德满都全景'},{n:'帕斯帕提那寺',r:'巴格马蒂河畔，可观察火葬仪式和苦行僧'}],nt:'落地签50USD · 飞机1915-2145 · In Driver打车4.8星\n过渡站，重点是尽快去Pokhara',cl:'轻薄外套+长裤',bg:800},
+{id:2,date:'2027-01-17',days:14,sch:false,co:'Nepal',ci:'Pokhara',tmp:'15°C',tz:'-2h15m',tr:'Tourist Bus (经Bandipur停留半天)',tt:'bus',tc:380,ts:'confirmed',food:45,stay:40,sl:'',lt:25,tick:10,oth:0,st:'confirmed',pl:[{n:'★ Sarangkot 日出',r:'30min到达，Annapurna雪山群被晨光染成粉红色，最容易到达的顶级雪山日出'},{n:'Phewa Lake 费瓦湖',r:'划船看鱼尾峰倒影，日落整面湖变金色，每天下班后治愈地'},{n:'Begnas Lake 双湖',r:'1hr，Phewa的安静版，几乎没游客，渔民划船，湖面如镜'},{n:'★ Poon Hill 布恩山(2天1夜)',r:'Annapurna最经典短徒步，3210m山顶360°喜马拉雅日出，住teahouse'},{n:'Australian Camp(2天1夜)',r:'轻松版徒步替代，山脊营地面对雪山看星空，腰友好'},{n:'Bandipur 班迪普尔',r:'路过！KTM去Pokhara路上停半天，山顶零游客Newari村，喜马拉雅全景线'}],nt:'★ 旅居首选！Lakeside区wifi cafe多，住Baidam尾段（安静）\nDal bhat一餐无限续RM8-15\n也可选30min小飞机RM400去KTM',cl:'徒步装备+保暖+防水鞋',bg:2100},
+{id:3,date:'2027-01-31',days:1,sch:false,co:'India',ci:'New Delhi',tmp:'20°C',tz:'-2h30m',tr:'Pokhara→KTM Bus + KTM→Delhi Flight',tt:'flight',tc:956,ts:'planning',food:0,stay:0,sl:'',lt:0,tick:0,oth:0,st:'planning',pl:[{n:'转机站',r:'不出机场/只住一晚'}],nt:'eVisa 25USD\n纯转机',cl:'舒适转机装',bg:1000},
+{id:4,date:'2027-02-01',days:21,sch:false,co:'Kazakhstan',ci:'Almaty',tmp:'-5°C',tz:'-2h',tr:'Air Astana Delhi→Almaty',tt:'flight',tc:774,ts:'confirmed',food:50,stay:45,sl:'',lt:30,tick:10,oth:0,st:'confirmed',pl:[{n:'★ Shymbulak 琴布拉克',r:'缆车20min直达3200m雪山！不滑雪也值得，俯瞰Almaty被雪山环抱，票~RM30'},{n:'★ Big Almaty Lake',r:'1hr车，海拔2510m翡翠色高山湖，2月可能结冰更壮美'},{n:'Turgen峡谷+冰瀑',r:'1.5hr，天山松林里的瀑布群，冬天结成冰瀑很震撼，当地人秘密去处'},{n:'Issyk Lake',r:'1.5hr，天山脚下安静高山湖，冬天童话般雪景'},{n:'★ Charyn Canyon(周末2天1夜)',r:'4hr车(腰注意)，中亚的大峡谷，红色岩层千万年风蚀，可住yurt'}],nt:'免签30天 · Green Bazaar午餐lagman面+samsa馅饼RM10\nYandex Go叫车 · Coworking: SmartPoint, Bunker\n2月最厚保暖！滑雪季',cl:'厚羽绒+发热衣+冰爪+手套+围巾',bg:3700},
+{id:5,date:'2027-02-22',days:7,sch:false,co:'Kyrgyzstan',ci:'Karakol',tmp:'-13°C',tz:'-2h',tr:'Almaty→Bishkek(4hr)住一晚→Karakol(6hr)',tt:'bus',tc:150,ts:'planning',food:60,stay:50,sl:'',lt:30,tick:10,oth:0,st:'planning',pl:[{n:'★ Altyn-Arashan 温泉谷',r:'4x4吉普1.5hr穿雪地，零下十几度泡露天温泉看雪山！全世界找不到几个'},{n:'★ Jeti-Ögüz 七牛红岩',r:'40min，七块巨大红色岩石+碎心石，冬天红岩配白雪更震撼，公共小巴可达'},{n:'Karakol Ski Base',r:'30min，可能全球最便宜滑雪场，缆车上去看天山雪景'},{n:'Skazka Canyon 童话峡谷',r:'2hr，Issyk-Kul湖南岸，彩色风蚀砂岩像外星球，冬天空无一人'}],nt:'免签60天 · 分两段走保护腰：Almaty→Bishkek住一晚→Karakol\nDungan回族社区有拉面和包子！Ashlan-Fu冷面必吃\nHomestay含饭~RM50-70/晚\n2月极冷需最保暖装备',cl:'最厚保暖全套',bg:1300},
+{id:6,date:'2027-03-01',days:5,sch:false,co:'Georgia',ci:'Tbilisi',tmp:'8°C',tz:'-4h',tr:'Bishkek→Tbilisi Flight',tt:'flight',tc:1500,ts:'planning',food:80,stay:50,sl:'',lt:50,tick:25,oth:0,st:'planning',pl:[{n:'Dashbashi Canyon',r:'1.5hr，2022新开玻璃桥横跨240m深峡谷，下面翡翠河和瀑布群'},{n:'Kakheti 葡萄酒区',r:'1.5hr，世界葡萄酒发源地，品酒+田园风光'},{n:'硫磺浴',r:'Tbilisi名物，地下温泉浴场，当地人日常'}],nt:'免签1年！数字游牧天堂\nFabrika Hostel有超棒coworking\nKhinkali一个RM0.50，Khachapuri RM5-8\nBolt/Yandex Go叫车\n住宿：Om Home, Urban&Cave(RM40)',cl:'中等保暖+围巾',bg:2600},
+{id:7,date:'2027-03-06',days:7,sch:false,co:'Georgia',ci:'Mestia',tmp:'1°C',tz:'-4h',tr:'Tbilisi→Mestia Flight(1.5hr)或Bus(9hr)',tt:'flight',tc:250,ts:'planning',food:60,stay:55,sl:'',lt:60,tick:25,oth:0,st:'planning',pl:[{n:'★ Ushguli 乌树故里',r:'欧洲最高村庄(2200m)，UNESCO中世纪防御塔，3月道路可能因雪封闭需确认'},{n:'Chalaadi Glacier',r:'3hr来回，走路可达的冰川！过吊桥穿森林到冰川舌端，腰友好轻松步道'},{n:'Koruldi Lakes方向散步',r:'3月顶部可能不可达，但低段森林雪景步道很美'}],nt:'Svaneti雪山秘境 · 3月还是冬天，部分高海拔路线不可走\n回程经Kutaisi顺路去：\n→ Martvili Canyon（翡翠峡谷坐船）\n→ Okatse Canyon（悬崖步道）',cl:'厚保暖+防水+登山鞋',bg:1700},
+{id:8,date:'2027-03-13',days:12,sch:false,co:'Georgia',ci:'Tbilisi',tmp:'7°C',tz:'-4h',tr:'Mestia→Kutaisi(Bus/Flight)→Tbilisi',tt:'bus',tc:100,ts:'planning',food:60,stay:50,sl:'',lt:50,tick:25,oth:0,st:'planning',pl:[{n:'★ Kazbegi/Stepantsminda(2-3天)',r:'3hr车，全年可达！5047m雪峰+山坡教堂，军事公路本身就是绝景，3月雪景最壮美'},{n:'Truso Valley 特鲁索谷',r:'Kazbegi附近隐秘山谷，废弃中世纪村庄+红色矿物温泉，半天往返，几乎零游客'},{n:'Juta Valley',r:'Kazbegi附近另一隐秘山谷，雪山草甸'},{n:'★ Martvili Canyon',r:'回程顺路！翡翠水在石灰岩峡谷中，坐船穿过'},{n:'Okatse Canyon',r:'Martvili旁，悬崖上的步道'}],nt:'第二段Tbilisi重点安排：\n• Kazbegi 2-3天（住Rooms Hotel或guesthouse）\n• Kakheti葡萄酒区 1天\n• Dashbashi Canyon 1天\nKetino\'s Home, Green Hostel',cl:'薄外套+围巾',bg:2400},
+{id:9,date:'2027-03-25',days:3,sch:false,co:'Armenia',ci:'Yerevan',tmp:'5°C',tz:'-4h',tr:'Tbilisi→Yerevan 拼车4hr',tt:'bus',tc:200,ts:'planning',food:80,stay:50,sl:'',lt:50,tick:25,oth:0,st:'planning',pl:[{n:'★ Garni Gorge "Symphony of Stones"',r:'1hr，数万根六角形玄武岩柱从峡谷壁伸出像管风琴！比Giant\'s Causeway更壮观但知名度低100倍'},{n:'★ Khor Virap + 亚拉拉特山',r:'1hr，5137m雪山就在眼前但属土耳其，亚美尼亚人永远的痛。下午光线最好'}],nt:'只有3天，每天下午跑1个景点\nDay1: Garni Gorge下午\nDay2: Khor Virap下午\nDay3: Vernissage跳蚤市场+吃喝\nLavash面包UNESCO非遗，石榴汁RM3/杯，Khorovats BBQ必吃',cl:'中等保暖',bg:900},
+{id:10,date:'2027-03-28',days:2,sch:true,co:'Bulgaria',ci:'Sofia',tmp:'12°C',tz:'-6h',tr:'Yerevan→Tbilisi→Sofia(经Istanbul/Munich)',tt:'flight',tc:1500,ts:'planning',food:80,stay:45,sl:'',lt:50,tick:25,oth:0,st:'planning',pl:[{n:'★ Vitosha Mountain',r:'30min公交到山脚！缆车上去看石河奇观（巨石铺成的"河流"地质奇观）+松林步道，3月底山顶残雪'}],nt:'Sofia只是过渡2天\nDay1: 到达休息\nDay2: Vitosha Mountain下午\n→ 傍晚去Plovdiv',cl:'轻薄外套',bg:2000},
+{id:11,date:'2027-03-30',days:4,sch:true,co:'Bulgaria',ci:'Plovdiv',tmp:'17°C',tz:'-6h',tr:'Sofia→Plovdiv Bus 2.5hr',tt:'bus',tc:35,ts:'confirmed',food:60,stay:50,sl:'',lt:30,tick:20,oth:0,st:'confirmed',pl:[{n:'★ Bachkovo + Asenova Fortress',r:'45min，从修道院沿山路走1hr到悬崖要塞，穿过罗多彼山脉松林，腰友好轻松步道'},{n:'Wonderful Bridges 奇迹桥',r:'2hr，罗多彼山脉深处天然石拱桥，15m高石灰岩拱门在森林中，几乎零外国游客'},{n:'Kapana创意区',r:'步行，好咖啡，当地艺术'}],nt:'巴尔干最低物价之一\nShopska Salata沙拉+Kebapche烤肉棒 一餐~RM15\n保加利亚酸奶是国宝\n欧洲最古老城市之一',cl:'春装+薄外套',bg:1200},
+{id:12,date:'2027-04-03',days:8,sch:true,co:'Romania',ci:'Brașov',tmp:'10°C',tz:'-6h',tr:'Plovdiv→Bucharest→Brașov Bus(建议Bucharest住一晚)',tt:'bus',tc:250,ts:'planning',food:60,stay:70,sl:'',lt:30,tick:30,oth:0,st:'planning',pl:[{n:'★ 七阶梯峡谷 7 Scări',r:'30min，爬铁梯穿过岩壁窄缝，1.5hr全程，下班后完美冒险'},{n:'★ Piatra Craiului 山脉',r:'45min，25km刀刃状山脊线！Zărnești Gorge短线3hr来回已够震撼'},{n:'Zărnești 棕熊保护区',r:'45min，欧洲最大棕熊救助中心，在喀尔巴阡森林近距离看棕熊'},{n:'Tampa Mountain',r:'城市内，步行/缆车到山顶俯瞰红屋顶山谷小城'}],nt:'紧靠喀尔巴阡山脉，4月春暖花开\nCiorbă酸汤、Sarmale卷心菜包饭必吃\nRepublica区有好cafe\n→ 去Sibiu火车2.5hr沿途风景超美',cl:'中等外套',bg:2200},
+{id:13,date:'2027-04-11',days:4,sch:true,co:'Romania',ci:'Sibiu',tmp:'14°C',tz:'-6h',tr:'Brașov→Sibiu Train 2.5hr',tt:'train',tc:50,ts:'planning',food:60,stay:70,sl:'',lt:30,tick:20,oth:0,st:'planning',pl:[{n:'★ Mărginimea Sibiului 牧羊村庄群',r:'1hr，传统牧羊村，春天羊群上山，吃新鲜brânză羊奶酪+mămăligă+tuică白兰地'},{n:'Cindrel Mountains 步道',r:'1hr，温和半天步道穿过高山草甸和针叶林，4月有野花，游客极少'},{n:'Dumbrava Forest',r:'步行可达，Sibiu南边的大片森林，轻松散步'}],nt:'取代Timișoara！特兰西瓦尼亚之心，周围自然更丰富\n"会眨眼的屋顶窗户"很可爱\n→ 去Belgrade经Timișoara中转住一晚(保护腰)',cl:'春装',bg:1000},
+{id:14,date:'2027-04-15',days:5,sch:false,co:'Serbia',ci:'Belgrade',tmp:'18°C',tz:'-7h',tr:'Sibiu→Timișoara(住一晚)→Belgrade 4hr',tt:'bus',tc:80,ts:'planning',food:70,stay:60,sl:'',lt:30,tick:20,oth:0,st:'planning',pl:[{n:'Ada Ciganlija "Belgrade的海"',r:'市区，多瑙河人工岛湖，沿湖骑车散步看当地人日常'},{n:'多瑙河+萨瓦河交汇处',r:'Kalemegdan公园看两河汇合日落，Free walking tour了解被炸44次的城市故事'},{n:'Skadarlija波西米亚街',r:'Kafana小酒馆现场音乐+ćevapi+rakija'}],nt:'Belgrade重人文+食物，自然放在Zlatibor\nSkadarlija的kafana必体验\n塞尔维亚食物份量巨大，一份RM15够两人\n→ 之后去Zlatibor山区',cl:'春装',bg:1500},
+{id:15,date:'2027-04-20',days:4,sch:false,co:'Serbia',ci:'Zlatibor',tmp:'12°C',tz:'-7h',tr:'Belgrade→Zlatibor Train 4hr',tt:'train',tc:30,ts:'planning',food:60,stay:50,sl:'',lt:40,tick:20,oth:0,st:'planning',pl:[{n:'★ Uvac Canyon 乌瓦茨大峡谷',r:'1.5hr，河流蜿蜒成完美S形，塞尔维亚NO.1自然！翼展2.5m秃鹰在峡谷盘旋，可坐船进入'},{n:'★ Mokra Gora + Šargan Eight铁路',r:'30min，8字形窄轨铁路穿22条隧道5座桥，风景绝美+Kusturica导演的Drvengrad木头村'},{n:'Tara National Park',r:'1hr，Drina River峡谷"河中小屋"+原始森林步道'}],nt:'全塞尔维亚最壮观的自然景观集中区\nUvac Canyon建议坐船+观景台都去\n→ 之后去Montenegro Kotor约6hr巴士',cl:'外套+登山鞋',bg:900},
+{id:16,date:'2027-04-24',days:7,sch:false,co:'Montenegro',ci:'Kotor',tmp:'18°C',tz:'-7h',tr:'Zlatibor→Kotor Bus ~6hr',tt:'bus',tc:100,ts:'planning',food:80,stay:100,sl:'',lt:40,tick:30,oth:0,st:'planning',pl:[{n:'Kotor Bay 峡湾步道',r:'步行，欧洲唯一峡湾型海湾，山插入海中，每个转弯都是明信片'},{n:'★ Lovćen National Park',r:'1.5hr，盘山公路25个发夹弯到1749m山顶，360°看全黑山+海湾+群山'},{n:'Perast + Our Lady of the Rocks',r:'20min船，安静海湾小镇坐船到海中小岛，日落时最宁静'}],nt:'住Dobrota（Kotor旁5min，安静便宜）\nNjeguški steak（烟熏火腿包奶酪卷）必吃\n5月开始旺季涨价注意',cl:'春装+防晒',bg:2500},
+{id:17,date:'2027-05-01',days:5,sch:false,co:'Montenegro',ci:'Žabljak',tmp:'8°C',tz:'-7h',tr:'Kotor→Žabljak Bus ~4hr',tt:'bus',tc:105,ts:'planning',food:70,stay:60,sl:'',lt:30,tick:20,oth:0,st:'planning',pl:[{n:'★ Black Lake 黑湖',r:'步行即达，Durmitor明珠，深蓝湖泊+针叶林+雪峰，绕湖3.5km超轻松'},{n:'★ Tara River Canyon',r:'30min，欧洲最深峡谷1300m！Đurđevića大桥上往下看会腿软，5月可漂流'},{n:'Durmitor冰川湖群',r:'1-3hr步道，除黑湖外17个冰川湖，5月初薄冰+雪峰美到窒息，选Zminje Lake轻松路线'}],nt:'增加到5天（原3天太赶）\nGuesthouse~RM60/晚含饭\n★ 优化关键：从Žabljak直接去Sarajevo(5-6hr)而不是回Kotor！省时省钱',cl:'保暖+登山鞋',bg:1200},
+{id:18,date:'2027-05-06',days:14,sch:false,co:'Bosnia',ci:'Sarajevo',tmp:'18°C',tz:'-7h',tr:'Žabljak→Sarajevo Bus ~5-6hr(经Foča)',tt:'bus',tc:100,ts:'planning',food:50,stay:45,sl:'',lt:30,tick:15,oth:0,st:'planning',pl:[{n:'Vrelo Bosne 波斯尼亚河之泉',r:'30min，清澈泉水涌出形成绿松石色小湖+天鹅，Sarajevo人最爱的散步地'},{n:'★ Skakavac Waterfall',r:'1hr步行，穿过森林到98m高瀑布，Bosnia最高瀑布之一，5月水量充沛'},{n:'★ Bjelašnica + Lukomir Village',r:'40min，1984冬奥废弃滑雪场+Bosnia最高永久村庄，石头房+高山草甸+羊群+5月野花'},{n:'★ Blagaj Tekke',r:'2hr，修道院建在200m悬崖底，Buna河从洞穴涌出翡翠色，像fantasy电影场景。河边吃鳟鱼'},{n:'Jajce 瀑布城',r:'2.5hr，市中心20m大瀑布！Pliva Lakes水磨坊群+翠绿湖水=Bosnia最上镜画面'}],nt:'全行程性价比最高旅居地之一！\nĆevapi是信仰 — Baščaršija的Željo排队也要吃，一份RM8-10\n波斯尼亚咖啡+Turkish delight每天仪式\n★ Free walking tour必参加，围城战争故事会改变对生命的看法',cl:'春夏装+薄外套',bg:2200},
+{id:19,date:'2027-05-20',days:6,sch:true,co:'Slovenia',ci:'Ljubljana',tmp:'22°C',tz:'-7h',tr:'Sarajevo→Zagreb(住一晚保护腰)→Ljubljana',tt:'bus',tc:250,ts:'planning',food:100,stay:100,sl:'',lt:40,tick:30,oth:0,st:'planning',pl:[{n:'★ Lake Bohinj 博希尼湖',r:'1.5hr，比Bled更美更安静！Julian Alps雪峰倒映翡翠湖面，Vogel缆车看全景'},{n:'★ Vintgar Gorge',r:'1.5hr，木栈道走在翡翠激流上方1.6km，尽头13m瀑布，早上去避人群'},{n:'Lake Bled',r:'1.5hr，著名的湖心小岛教堂，搭配Bohinj一起去'}],nt:'Slovenia物价比巴尔干贵，多自炊省钱\nMercator超市有好东西\nŠtruklji面卷+Kremna rezina奶油蛋糕\n→ 之后去Bovec体验Soča河谷',cl:'春夏装',bg:2200},
+{id:20,date:'2027-05-26',days:4,sch:true,co:'Slovenia',ci:'Bovec',tmp:'20°C',tz:'-7h',tr:'Ljubljana→Bovec Bus 3hr(经Vršič Pass 50个发夹弯绝景公路！坐右边窗)',tt:'bus',tc:30,ts:'planning',food:80,stay:90,sl:'',lt:20,tick:20,oth:0,st:'planning',pl:[{n:'★ Soča River 翡翠河',r:'就在身边，欧洲最美河流之一，蓝绿色水不真实，Soča Trail沿河步道'},{n:'★ Kozjak Waterfall',r:'20min，藏在岩洞里的瀑布！穿岩缝进入天然圆形岩室，瀑布落入发光绿色水潭，像龙宫'},{n:'Tolmin Gorge',r:'1hr，Triglav国家公园最低入口，木栈道穿深切峡谷，比Vintgar安静更有探险感'},{n:'Boka Waterfall',r:'Slovenia最强力瀑布，139m落差'}],nt:'Soča Valley = 自然密度极高！\n5月底水虽冷但可以在河里游泳了\n→ 之后去Poland Kraków',cl:'春夏装+轻便登山鞋',bg:1100},
+{id:21,date:'2027-05-30',days:5,sch:true,co:'Poland',ci:'Kraków',tmp:'22°C',tz:'-7h',tr:'Ljubljana→Kraków FlixBus(经Vienna住一晚)或廉航1.5hr',tt:'bus',tc:150,ts:'planning',food:50,stay:50,sl:'',lt:20,tick:15,oth:0,st:'planning',pl:[{n:'★ Ojców National Park',r:'30min公交，石灰岩峡谷+天然石门+溶洞+森林，下班后去走2hr完美'},{n:'★ Dunajec River Gorge 漂流',r:'2hr，传统木筏穿波兰斯洛伐克边境峡谷，300m悬崖+清澈河水，独一无二体验'},{n:'Kazimierz区',r:'步行，最好的cafe和pierogi饺子区'}],nt:'★ 取代Austria！物价只有1/5，风景不输\n6月是最好季节\nPierogi饺子、Żurek酸汤必吃\nKazimierz区cafe文化成熟，适合旅居\n→ Zakopane巴士只要2hr',cl:'春夏装',bg:900},
+{id:22,date:'2027-06-04',days:5,sch:true,co:'Poland',ci:'Zakopane',tmp:'18°C',tz:'-7h',tr:'Kraków→Zakopane Bus 2hr',tt:'bus',tc:20,ts:'planning',food:50,stay:50,sl:'',lt:15,tick:10,oth:0,st:'planning',pl:[{n:'★★ Morskie Oko 海之眼',r:'步行2-3hr，波兰第一美景！Tatra山脉翡翠色高山湖+2000m雪峰环绕，山路平缓腰友好'},{n:'★ Valley of Five Polish Lakes',r:'全天，从Morskie Oko继续往上，5个串联冰川湖每个颜色不同，6月刚解冻冰湖雪山同框'},{n:'Kościeliska Valley',r:'2hr来回，最轻松的Tatra宽谷步道，石灰岩壁+瀑布+Mroźna冰洞'},{n:'Gubałówka缆车',r:'缆车上去看Tatra全景'}],nt:'Tatra Mountains = "小阿尔卑斯"！\nOscypek烟熏羊奶酪（烤配蔓越莓酱）必吃\nKwaśnica酸菜汤、Placki po zbójnicku土豆饼\n物价是Austria的1/4-1/5\n→ 回Kraków转Prague火车6hr',cl:'登山鞋+薄外套',bg:800},
+{id:23,date:'2027-06-09',days:5,sch:true,co:'Czech Republic',ci:'Prague',tmp:'24°C',tz:'-7h',tr:'Zakopane→Kraków(2hr)→Prague Train/FlixBus 6hr',tt:'bus',tc:80,ts:'planning',food:60,stay:70,sl:'',lt:20,tick:20,oth:0,st:'planning',pl:[{n:'★★ Bohemian Switzerland',r:'2hr火车，欧洲最大天然砂岩拱门！Edmund\'s Gorge坐船穿幽暗峡谷，Narnia灵感地，亚洲旅客几乎不知道'},{n:'Kokořínsko谷地',r:'1.5hr，隐秘砂岩谷，蘑菇形岩石柱+中世纪岩洞住所遗迹，连捷克人都少去'},{n:'Český Kras山谷',r:'45min，石灰岩山谷+野花草甸+化石，轻松下午散步'}],nt:'★ 不要在旅游区吃饭！\n去Žižkov或Vinohrady区找hospoda（啤酒馆）\n0.5L捷克啤酒~RM5（全球最便宜最好喝）\nTrdelník烟囱蛋糕是游客陷阱\n真正吃：Svíčková炖牛肉、Vepřo-knedlo-zelo烤猪肉\n→ 飞Barcelona廉航Ryanair/Wizz ~RM200-400',cl:'夏装',bg:1100},
+{id:24,date:'2027-06-14',days:5,sch:true,co:'Spain',ci:'Barcelona',tmp:'26°C',tz:'-7h',tr:'Prague→Barcelona 廉航 2.5hr',tt:'flight',tc:300,ts:'planning',food:100,stay:120,sl:'',lt:40,tick:30,oth:0,st:'planning',pl:[{n:'★ Montserrat山',r:'1hr火车，锯齿状砂岩山峰如外星，齿轮火车上山后岩柱间步道，最高处看地中海+比利牛斯'},{n:'Costa Brava海岸步道',r:'1.5hr，Camí de Ronda古走私者小路，悬崖+松林+蓝绿海水，可在隐秘海湾游泳'}],nt:'Menú del día每日套餐=省钱神器（前菜+主菜+甜点+面包+饮料~RM40-55）\n下午2-5pm siesta很多店关门\n→ 之后去Granada（自然重点）',cl:'夏装+防晒+帽',bg:1800},
+{id:25,date:'2027-06-19',days:7,sch:true,co:'Spain',ci:'Granada',tmp:'30°C',tz:'-7h',tr:'Barcelona→Granada 廉航/Train',tt:'flight',tc:150,ts:'planning',food:80,stay:80,sl:'',lt:30,tick:20,oth:0,st:'planning',pl:[{n:'★ Sierra Nevada 内华达山脉',r:'45min，伊比利亚最高山脉(3479m)！6-7月残雪+野花，巴士到2500m直接走高山草甸'},{n:'★ Las Alpujarras白色山村',r:'1.5hr，Sierra Nevada南坡北非摩尔人白色小村(Pampaneira, Bubión, Capileira)，吃Jamón Serrano+Migas'},{n:'★ Caminito del Rey',r:'2hr，建在100m悬崖上的步道穿El Chorro峡谷，曾是世界最危险步道，需提前网上预约'}],nt:'★ 增加到7天（原2天太短）！Granada的自然资源是全西班牙最好的\nGranada tapas文化全西班牙最好——点饮料就送免费tapas！\n晚餐要等到9点以后\n→ 之后去Madrid',cl:'夏装+登山鞋+防晒',bg:1800},
+{id:26,date:'2027-06-26',days:8,sch:true,co:'Spain',ci:'Madrid',tmp:'32°C',tz:'-7h',tr:'Granada→Madrid Train/Bus 4hr',tt:'bus',tc:100,ts:'planning',food:100,stay:100,sl:'',lt:40,tick:30,oth:0,st:'planning',pl:[{n:'Sierra de Guadarrama',r:'1hr，Madrid北面国家公园，松林+花岗岩峰+高山湖，Peñalara(2428m)多条3-5hr步道'},{n:'Patones de Arriba',r:'1hr，隐藏在山里的石板村，据说几百年不知外界存在，免费周围山谷步道几乎零游客'}],nt:'Madrid减少到8天（原14天太多）\nSegovia daytrip罗马水道桥值得去\n→ 之后飞Lisbon（TAP/Ryanair便宜时RM100-200）',cl:'夏装+防晒+帽',bg:2800},
+{id:27,date:'2027-07-04',days:5,sch:true,co:'Portugal',ci:'Lisbon',tmp:'28°C',tz:'-8h',tr:'Madrid→Lisbon Flight 1hr',tt:'flight',tc:200,ts:'planning',food:80,stay:100,sl:'',lt:30,tick:20,oth:0,st:'planning',pl:[{n:'★ Arrábida Natural Park',r:'1hr，崖壁海岸+松林延伸到悬崖边+加勒比蓝海水，Praia de Galapinhos欧洲最美海滩之一'},{n:'Rota Vicentina海岸步道',r:'1.5hr，西海岸野性悬崖步道，风蚀悬崖+大西洋惊涛，没护栏没开发'}],nt:'减少到5天，把时间留给Madeira\n→ Madeira飞1.5hr',cl:'夏装+舒适鞋',bg:1500},
+{id:28,date:'2027-07-09',days:6,sch:true,co:'Portugal',ci:'Madeira',tmp:'24°C',tz:'-8h',tr:'Lisbon→Madeira Flight 1.5hr',tt:'flight',tc:200,ts:'planning',food:80,stay:90,sl:'',lt:40,tick:10,oth:0,st:'planning',pl:[{n:'★★ Pico Arieiro→Pico Ruivo 云上步道',r:'全天，在云层之上走火山山脊！脚下翻滚云海，穿岩洞隧道，6个月旅程最震撼自然体验之一'},{n:'★ Levada 25 Fontes',r:'半天，沿古灌溉水渠走月桂林，到达25条泉水同时流下的瀑布岩壁，全程平坦腰友好'},{n:'Levada Caldeirão Verde',r:'半天，穿4个岩洞隧道（带手电），悬崖边窄渠道到苔藓覆盖山谷+100m瀑布，侏罗纪公园场景'},{n:'Cabo Girão 580m海崖',r:'欧洲最高海崖之一，玻璃地板观景台+缆车到崖底隐秘农场海滩'},{n:'Porto Moniz 火山泳池',r:'30min，火山熔岩形成的天然岩石泳池，在火山岩池里游泳看大西洋'}],nt:'★ 增加到6天！旅程完美句号\n6个月旅程中自然密度最高的地方\nPoncha（朗姆酒+蜂蜜+柠檬）岛上国饮\nEspetada月桂枝串牛肉必吃\n公共巴士可到大部分Levada步道\n可从Madeira直接飞回KL（经Istanbul/Dubai）',cl:'徒步鞋+防晒+薄外套（山顶冷）',bg:1600},
+{id:29,date:'2027-07-15',days:2,sch:false,co:'Malaysia',ci:'JB',tmp:'32°C',tz:'0',tr:'Madeira→Lisbon→KL',tt:'flight',tc:4000,ts:'planning',food:0,stay:0,sl:'',lt:0,tick:0,oth:0,st:'planning',pl:[{n:'回家！🏠',r:'6个月环游世界梦完成！'}],nt:'≈18hrs · 查Madeira直飞选项（可能经Istanbul更便宜）',cl:'热带装',bg:4000}
+];
+const CK0=[
+{id:1,cat:'Clothes',it:'内衣裤 5-7',pr:0,dn:false},{id:2,cat:'Clothes',it:'冷帽',pr:20,dn:false},
+{id:3,cat:'Clothes',it:'压力袜(长途)',pr:45,dn:false},{id:4,cat:'Clothes',it:'长厚袜 ×4',pr:20,dn:false},
+{id:5,cat:'Clothes',it:'围巾',pr:15,dn:false},{id:6,cat:'Clothes',it:'手套',pr:10,dn:false},
+{id:7,cat:'Clothes',it:'普通袜 ×2',pr:0,dn:false},
+{id:8,cat:'Doc',it:'Cash',pr:0,dn:false},{id:9,cat:'Doc',it:'Passport Copy',pr:0,dn:false},
+{id:10,cat:'Doc',it:'Wise Card',pr:0,dn:false},{id:11,cat:'Doc',it:'证件照 ×6',pr:15,dn:false},
+{id:12,cat:'Others',it:'发圈',pr:5,dn:false},{id:13,cat:'Others',it:'耳塞 ×2',pr:5,dn:false},
+{id:14,cat:'Others',it:'Daypack',pr:50,dn:false},{id:15,cat:'Others',it:'降噪耳机',pr:0,dn:false},
+{id:16,cat:'Others',it:'万能转接头',pr:45,dn:false},{id:17,cat:'Others',it:'防盗/Airtag',pr:100,dn:false},
+{id:18,cat:'Others',it:'小洗衣液',pr:40,dn:false},{id:19,cat:'Others',it:'折叠袋 ×2',pr:0,dn:false},
+{id:20,cat:'Others',it:'Plaster',pr:0,dn:false},{id:21,cat:'Others',it:'保温杯',pr:0,dn:false},
+{id:22,cat:'Others',it:'速干毛巾',pr:15,dn:false},{id:23,cat:'Others',it:'口罩 ×15',pr:0,dn:false},
+{id:24,cat:'Work',it:'全套Charger',pr:0,dn:false},{id:25,cat:'Work',it:'Laptop',pr:0,dn:false},
+{id:26,cat:'Work',it:'Powerbank',pr:150,dn:false},
+{id:27,cat:'外套',it:'轻羽绒',pr:0,dn:false},{id:28,cat:'外套',it:'冲锋衣MH100',pr:149,dn:false},
+{id:29,cat:'护肤',it:'Lotion+保湿+护手霜',pr:0,dn:false},{id:30,cat:'护肤',it:'洗脸+润唇',pr:0,dn:false},
+{id:31,cat:'护肤',it:'牙膏+眉笔+防晒',pr:10,dn:false},
+{id:32,cat:'药',it:'常备药(Panadol等)',pr:80,dn:false},{id:33,cat:'药',it:'高反药',pr:20,dn:false},
+{id:34,cat:'衣服',it:'Heattech ×2',pr:100,dn:false},{id:35,cat:'衣服',it:'速干便衣 ×2',pr:50,dn:false},
+{id:36,cat:'衣服',it:'长袖 ×2',pr:0,dn:false},
+{id:37,cat:'裤子',it:'Jogger',pr:50,dn:false},{id:38,cat:'裤子',it:'发热Legging ×2',pr:80,dn:false},
+{id:39,cat:'裤子',it:'运动长裤',pr:0,dn:false},
+{id:40,cat:'鞋子',it:'拖鞋',pr:0,dn:false},{id:41,cat:'鞋子',it:'轻便运动鞋',pr:0,dn:false},
+{id:42,cat:'鞋子',it:'防水防滑鞋(主力)',pr:350,dn:false},{id:43,cat:'鞋子',it:'冰爪',pr:20,dn:false}
+];
+const TD0=[
+{id:200,it:'申请申根签证',dn:false},{id:201,it:'申请国际驾照 (RM150)',dn:false},
+{id:202,it:'Nepal落地签准备(50USD)',dn:false},{id:203,it:'India eVisa(25USD)',dn:false},
+{id:204,it:'甲肝/伤寒疫苗',dn:false},{id:205,it:'Couchsurfing会员(RM85)',dn:false},
+{id:206,it:'SafetyWing旅行保险',dn:false},{id:207,it:'Wise卡充值',dn:false},
+{id:208,it:'通知银行出国',dn:false},{id:209,it:'备份文件到云端',dn:false}
+];
+const NT0=[
+{id:1,t:'中心思想',c:'开心最重要，想做什么就做什么\n来都来了 去做\n去每个地方健身房+坚持锻炼\n找到人生意义\n学会和人聊天\n认识各国人\n有多少素材就拍多少\n身心健康安全回来',pin:true},
+{id:2,t:'开源方式',c:'MKT · 自媒体 · Bonus · 影片剪辑 · 当地打工',pin:false},
+{id:3,t:'节流',c:'沙发客/青旅/Aupair/Housesitting\n自煮\n走路',pin:false},
+{id:4,t:'有用Apps',c:'Omio · GuruWalk · FlixBus · EurostarSnap\nSafetyWing · Bookaway',pin:false}
+];
+const FX0=[{n:'JB房子',v:1500},{n:'保险',v:880},{n:'水电管理费',v:342},{n:'WiFi',v:95},{n:'Subscription',v:212.56},{n:'生活费',v:100}];
+const PC0=[{n:'机票(已买)',v:4457.95,ok:true},{n:'衣服等等',v:1444,ok:false},{n:'杂费(驾照/疫苗/签证等)',v:988,ok:false},{n:'预备金',v:3500,ok:false}];
+const GL0=[
+  {id:1,cat:'💪 健身',big:'增肌+体能提升',subs:[
+    {n:'肌肉量+3kg',done:false,prog:0,dl:''},
+    {n:'能做10个引体向上',done:false,prog:0,dl:''},
+    {n:'每周健身4次',done:false,prog:0,dl:''}
+  ],daily:['健身1小时','蛋白质摄入150g','拉伸15分钟']},
+  {id:2,cat:'💰 存钱',big:'存够旅费出发',subs:[
+    {n:'每月存RM3000+',done:false,prog:0,dl:''},
+    {n:'减少不必要开销',done:false,prog:0,dl:''},
+    {n:'找额外收入来源',done:false,prog:0,dl:''}
+  ],daily:['记账','不买奶茶','检查优惠']},
+  {id:3,cat:'📸 内容',big:'建立自媒体基础',subs:[
+    {n:'学会基本剪辑',done:false,prog:0,dl:''},
+    {n:'开设旅行账号',done:false,prog:0,dl:''},
+    {n:'拍摄练习每周1次',done:false,prog:0,dl:''}
+  ],daily:['看一个剪辑教程','拍一段素材','写caption练习']},
+  {id:4,cat:'🗣️ 语言',big:'英语口语流利',subs:[
+    {n:'能自信和外国人聊天',done:false,prog:0,dl:''},
+    {n:'学基本格鲁吉亚语问候',done:false,prog:0,dl:''}
+  ],daily:['英语podcast 30min','背5个新单词','和AI练口语']},
+  {id:5,cat:'🧠 心理',big:'准备好独自上路',subs:[
+    {n:'克服社交焦虑',done:false,prog:0,dl:''},
+    {n:'学会独处',done:false,prog:0,dl:''},
+    {n:'建立每日routine',done:false,prog:0,dl:''}
+  ],daily:['冥想10分钟','写日记','和一个陌生人说话']}
+];
+
+const SAVED={"bgt":90000,"sav":10800,"mi":4000,"stops":[{"id":1,"date":"2027-01-14","days":3,"sch":false,"co":"Nepal","ci":"Kathmandu","tmp":"12°C","tz":"-2h15m","tr":"Malaysia Air KL→Nepal","tt":"flight","tc":457.95,"ts":"confirmed","food":39,"stay":50,"sl":"","lt":25,"tick":10,"oth":50,"st":"confirmed","pl":[{"n":"博达哈大佛塔 Boudhanath","r":"尼泊尔最大佛塔，傍晚转经时间氛围庄严"},{"n":"猴庙 Swayambhunath","r":"山顶俯瞰加德满都全景"},{"n":"帕斯帕提那寺","r":"巴格马蒂河畔，可观察火葬仪式和苦行僧"},{"n":"Utpala Cafe  ","r":"好吃的素食餐厅"},{"n":"Snowman Cafe","r":"很便宜的蛋糕店 一片RM3"}],"nt":"落地签50USD · 飞机1915-2145 · In Driver打车4.8星\n过渡站，重点是尽快去Pokhara","cl":"轻薄外套+长裤","bg":800},{"id":2,"date":"2027-01-17","days":14,"sch":false,"co":"Nepal","ci":"Pokhara","tmp":"15°C","tz":"-2h15m","tr":"Tourist Bus (经Bandipur停留半天)","tt":"bus","tc":380,"ts":"confirmed","food":45,"stay":50,"sl":"","lt":25,"tick":10,"oth":50,"st":"confirmed","pl":[{"n":"★ Sarangkot 日出","r":"30min到达，Annapurna雪山群被晨光染成粉红色，最容易到达的顶级雪山日出"},{"n":"Phewa Lake 费瓦湖","r":"划船看鱼尾峰倒影，日落整面湖变金色，每天下班后治愈地"},{"n":"Begnas Lake 双湖","r":"1hr，Phewa的安静版，几乎没游客，渔民划船，湖面如镜"},{"n":"★ Poon Hill 布恩山(2天1夜)","r":"Annapurna最经典短徒步，3210m山顶360°喜马拉雅日出，住teahouse"},{"n":"Australian Camp(2天1夜)","r":"轻松版徒步替代，山脊营地面对雪山看星空，腰友好"},{"n":"Bandipur 班迪普尔","r":"路过！KTM去Pokhara路上停半天，山顶零游客Newari村，喜马拉雅全景线"}],"nt":"★ 旅居首选！Lakeside区wifi cafe多，住Baidam尾段（安静）\nDal bhat一餐无限续RM8-15\n也可选30min小飞机RM400去KTM","cl":"徒步装备+保暖+防水鞋","bg":2100},{"id":3,"date":"2027-01-31","days":1,"sch":false,"co":"India","ci":"New Delhi","tmp":"20°C","tz":"-2h30m","tr":"Pokhara→KTM Bus + KTM→Delhi Flight","tt":"flight","tc":956,"ts":"planning","food":50,"stay":0,"sl":"","lt":20,"tick":0,"oth":0,"st":"planning","pl":[{"n":"转机站","r":"不出机场/只住一晚"}],"nt":"eVisa 25USD\n纯转机","cl":"舒适转机装","bg":1000},{"id":4,"date":"2027-02-01","days":21,"sch":false,"co":"Kazakhstan","ci":"Almaty","tmp":"-5°C","tz":"-2h","tr":"Air Astana Delhi→Almaty","tt":"flight","tc":774,"ts":"confirmed","food":50,"stay":50,"sl":"","lt":30,"tick":10,"oth":50,"st":"confirmed","pl":[{"n":"★ Shymbulak 琴布拉克","r":"缆车20min直达3200m雪山！不滑雪也值得，俯瞰Almaty被雪山环抱，票~RM30"},{"n":"★ Big Almaty Lake","r":"1hr车，海拔2510m翡翠色高山湖，2月可能结冰更壮美"},{"n":"Turgen峡谷+冰瀑","r":"1.5hr，天山松林里的瀑布群，冬天结成冰瀑很震撼，当地人秘密去处"},{"n":"Issyk Lake","r":"1.5hr，天山脚下安静高山湖，冬天童话般雪景"},{"n":"★ Charyn Canyon(周末2天1夜)","r":"4hr车(腰注意)，中亚的大峡谷，红色岩层千万年风蚀，可住yurt"}],"nt":"免签30天 · Green Bazaar午餐lagman面+samsa馅饼RM10\nYandex Go叫车 · Coworking: SmartPoint, Bunker\n2月最厚保暖！滑雪季","cl":"厚羽绒+发热衣+冰爪+手套+围巾","bg":3700},{"id":5,"date":"2027-02-22","days":7,"sch":false,"co":"Kyrgyzstan","ci":"Karakol","tmp":"-13°C","tz":"-2h","tr":"Almaty→Bishkek(4hr)住一晚→Karakol(6hr) Marshrutkas","tt":"bus","tc":250,"ts":"confirmed","food":60,"stay":60,"sl":"","lt":30,"tick":10,"oth":10,"st":"confirmed","pl":[{"n":"★ Altyn-Arashan 温泉谷","r":"4x4吉普1.5hr穿雪地，零下十几度泡露天温泉看雪山！全世界找不到几个"},{"n":"★ Jeti-Ögüz 七牛红岩","r":"40min，七块巨大红色岩石+碎心石，冬天红岩配白雪更震撼，公共小巴可达"},{"n":"Karakol Ski Base","r":"30min，可能全球最便宜滑雪场，缆车上去看天山雪景"},{"n":"Skazka Canyon 童话峡谷","r":"2hr，Issyk-Kul湖南岸，彩色风蚀砂岩像外星球，冬天空无一人"}],"nt":"免签60天 · 分两段走保护腰：Almaty→Bishkek住一晚→Karakol https://danroundtheworld.com/how-to-get-from-bishkek-to-karakol-kyrgyzstan/ \nDungan回族社区有拉面和包子！Ashlan-Fu冷面必吃\nHomestay含饭~RM50-70/晚\n2月极冷需最保暖装备","cl":"最厚保暖全套","bg":1300},{"id":6,"date":"2027-03-01","days":5,"sch":false,"co":"Georgia","ci":"Tbilisi","tmp":"8°C","tz":"-4h","tr":"Bishkek→Tbilisi Flight 10hrs in istanbul, total flight 8hrs","tt":"flight","tc":2200,"ts":"confirmed","food":80,"stay":50,"sl":"","lt":50,"tick":25,"oth":10,"st":"confirmed","pl":[{"n":"Dashbashi Canyon","r":"1.5hr，2022新开玻璃桥横跨240m深峡谷，下面翡翠河和瀑布群"},{"n":"Kakheti 葡萄酒区","r":"1.5hr，世界葡萄酒发源地，品酒+田园风光"},{"n":"硫磺浴","r":"Tbilisi名物，地下温泉浴场，当地人日常"},{"n":"坐缆车去看teleferic","r":"里克公園(Rike Park)出发，乘坐時間:約2–3分鐘，公共交通卡付款，可搭配納里卡拉堡壘散步"},{"n":"Georgia zip line","r":"https://www.youtube.com/watch?v=gJBFF4hhEGg"}],"nt":"免签1年！数字游牧天堂\nFabrika Hostel有超棒coworking\nKhinkali一个RM0.50，Khachapuri RM5-8\nBolt/Yandex Go叫车\n住宿：Om Home, Urban&Cave(RM40)","cl":"中等保暖+围巾","bg":2600},{"id":7,"date":"2027-03-06","days":7,"sch":false,"co":"Georgia","ci":"Mestia","tmp":"1°C","tz":"-4h","tr":"Tbilisi→Mestia Flight(1.5hr)或Bus(9hr)","tt":"flight","tc":250,"ts":"planning","food":60,"stay":55,"sl":"","lt":60,"tick":25,"oth":20,"st":"confirmed","pl":[{"n":"★ Ushguli 乌树故里","r":"欧洲最高村庄(2200m)，UNESCO中世纪防御塔，3月道路可能因雪封闭需确认"},{"n":"Chalaadi Glacier","r":"3hr来回，走路可达的冰川！过吊桥穿森林到冰川舌端，腰友好轻松步道"},{"n":"Koruldi Lakes方向散步","r":"3月顶部可能不可达，但低段森林雪景步道很美"}],"nt":"Svaneti雪山秘境 · 3月还是冬天，部分高海拔路线不可走\n回程经Kutaisi顺路去：\n→ Martvili Canyon（翡翠峡谷坐船）\n→ Okatse Canyon（悬崖步道）","cl":"厚保暖+防水+登山鞋","bg":1700},{"id":8,"date":"2027-03-13","days":12,"sch":false,"co":"Georgia","ci":"Tbilisi","tmp":"7°C","tz":"-4h","tr":"Mestia→Kutaisi(Bus/Flight)→Tbilisi","tt":"bus","tc":100,"ts":"planning","food":60,"stay":70,"sl":"","lt":50,"tick":25,"oth":20,"st":"planning","pl":[{"n":"★ Kazbegi/Stepantsminda(2-3天)","r":"3hr车，全年可达！5047m雪峰+山坡教堂，军事公路本身就是绝景，3月雪景最壮美"},{"n":"Truso Valley 特鲁索谷","r":"Kazbegi附近隐秘山谷，废弃中世纪村庄+红色矿物温泉，半天往返，几乎零游客"},{"n":"Juta Valley","r":"Kazbegi附近另一隐秘山谷，雪山草甸"},{"n":"★ Martvili Canyon","r":"回程顺路！翡翠水在石灰岩峡谷中，坐船穿过"},{"n":"Okatse Canyon","r":"Martvili旁，悬崖上的步道"}],"nt":"第二段Tbilisi重点安排：\n• Kazbegi 2-3天（住Rooms Hotel或guesthouse）\n• Kakheti葡萄酒区 1天\n• Dashbashi Canyon 1天\nKetino's Home, Green Hostel","cl":"薄外套+围巾","bg":2400},{"id":9,"date":"2027-03-25","days":3,"sch":false,"co":"Armenia","ci":"Yerevan","tmp":"5°C","tz":"-4h","tr":"Tbilisi→Yerevan 拼车30Gel +37496464611  4hr","tt":"bus","tc":200,"ts":"confirmed","food":80,"stay":70,"sl":"","lt":50,"tick":25,"oth":20,"st":"confirmed","pl":[{"n":"★ Garni Gorge \"Symphony of Stones\"","r":"1hr，数万根六角形玄武岩柱从峡谷壁伸出像管风琴！比Giant's Causeway更壮观但知名度低100倍"},{"n":"★ Khor Virap + 亚拉拉特山","r":"1hr，5137m雪山就在眼前但属土耳其，亚美尼亚人永远的痛。下午光线最好"}],"nt":"只有3天，每天下午跑1个景点\nDay1: Garni Gorge下午\nDay2: Khor Virap下午\nDay3: Vernissage跳蚤市场+吃喝\nLavash面包UNESCO非遗，石榴汁RM3/杯，Khorovats BBQ必吃","cl":"中等保暖","bg":900},{"id":10,"date":"2027-03-28","days":2,"sch":true,"co":"Bulgaria","ci":"Sofia","tmp":"12°C","tz":"-6h","tr":"Yerevan→Tbilisi→Sofia(经Istanbul/Munich)","tt":"flight","tc":1500,"ts":"planning","food":80,"stay":70,"sl":"","lt":50,"tick":25,"oth":50,"st":"planning","pl":[{"n":"★ Vitosha Mountain","r":"30min公交到山脚！缆车上去看石河奇观（巨石铺成的\"河流\"地质奇观）+松林步道，3月底山顶残雪"}],"nt":"Sofia只是过渡2天\nDay1: 到达休息\nDay2: Vitosha Mountain下午\n→ 傍晚去Plovdiv","cl":"轻薄外套","bg":2000},{"id":11,"date":"2027-03-30","days":4,"sch":true,"co":"Bulgaria","ci":"Plovdiv","tmp":"17°C","tz":"-6h","tr":"Sofia→Plovdiv Bus 2.5hr","tt":"bus","tc":52,"ts":"confirmed","food":60,"stay":70,"sl":"","lt":30,"tick":20,"oth":50,"st":"planning","pl":[{"n":"★ Bachkovo + Asenova Fortress","r":"45min，从修道院沿山路走1hr到悬崖要塞，穿过罗多彼山脉松林，腰友好轻松步道"},{"n":"Wonderful Bridges 奇迹桥","r":"2hr，罗多彼山脉深处天然石拱桥，15m高石灰岩拱门在森林中，几乎零外国游客"},{"n":"Kapana创意区","r":"步行，好咖啡，当地艺术"}],"nt":"巴尔干最低物价之一\nShopska Salata沙拉+Kebapche烤肉棒 一餐~RM15\n保加利亚酸奶是国宝\n欧洲最古老城市之一","cl":"春装+薄外套","bg":1200},{"co":"Romania","ci":"Bucharest","days":1,"tmp":"","tz":"","sch":false,"st":"confirmed","tr":"Plovdiv→Bucharest 9.5hrs","tt":"bus","tc":200,"ts":"planning","food":100,"stay":80,"sl":"","lt":20,"tick":0,"oth":50,"bg":500,"cl":"","id":1775656700125,"pl":[],"nt":"","date":"2027-04-03"},{"id":12,"date":"2027-04-04","days":8,"sch":true,"co":"Romania","ci":"Brașov","tmp":"10°C","tz":"-6h","tr":"Bucharest→Brașov Bus 3.5hrs ","tt":"bus","tc":25,"ts":"confirmed","food":100,"stay":80,"sl":"","lt":30,"tick":30,"oth":50,"st":"confirmed","pl":[{"n":"★ 七阶梯峡谷 7 Scări","r":"30min，爬铁梯穿过岩壁窄缝，1.5hr全程，下班后完美冒险"},{"n":"★ Piatra Craiului 山脉","r":"45min，25km刀刃状山脊线！Zărnești Gorge短线3hr来回已够震撼"},{"n":"Zărnești 棕熊保护区","r":"45min，欧洲最大棕熊救助中心，在喀尔巴阡森林近距离看棕熊"},{"n":"Tampa Mountain","r":"城市内，步行/缆车到山顶俯瞰红屋顶山谷小城"}],"nt":"紧靠喀尔巴阡山脉，4月春暖花开\nCiorbă酸汤、Sarmale卷心菜包饭必吃\nRepublica区有好cafe\n→ 去Sibiu火车2.5hr沿途风景超美","cl":"中等外套","bg":2200},{"id":13,"date":"2027-04-12","days":4,"sch":true,"co":"Romania","ci":"Sibiu","tmp":"14°C","tz":"-6h","tr":"Brașov→Sibiu Train 2.5hr","tt":"train","tc":30,"ts":"confirmed","food":100,"stay":80,"sl":"","lt":30,"tick":20,"oth":50,"st":"planning","pl":[{"n":"★ Mărginimea Sibiului 牧羊村庄群","r":"1hr，传统牧羊村，春天羊群上山，吃新鲜brânză羊奶酪+mămăligă+tuică白兰地"},{"n":"Cindrel Mountains 步道","r":"1hr，温和半天步道穿过高山草甸和针叶林，4月有野花，游客极少"},{"n":"Dumbrava Forest","r":"步行可达，Sibiu南边的大片森林，轻松散步"}],"nt":"取代Timișoara！特兰西瓦尼亚之心，周围自然更丰富\n\"会眨眼的屋顶窗户\"很可爱\n→ 去Belgrade经Timișoara中转住一晚(保护腰)","cl":"春装","bg":1000},{"co":"Romania","ci":"Timișoara","days":2,"tmp":"14°C","tz":"-6hrs","sch":true,"st":"confirmed","tr":"Sibiu --> Timisoara 4.20hrs","tt":"bus","tc":45,"ts":"confirmed","food":100,"stay":100,"sl":"","lt":25,"tick":0,"oth":50,"bg":297,"cl":"","id":1775657033690,"pl":[],"nt":"","date":"2027-04-16"},{"id":14,"date":"2027-04-18","days":5,"sch":false,"co":"Serbia","ci":"Belgrade","tmp":"18°C","tz":"-7h","tr":"Sibiu→Timișoara(住一晚)→Belgrade 4hr","tt":"bus","tc":80,"ts":"confirmed","food":130,"stay":150,"sl":"","lt":30,"tick":20,"oth":80,"st":"confirmed","pl":[{"n":"Ada Ciganlija \"Belgrade的海\"","r":"市区，多瑙河人工岛湖，沿湖骑车散步看当地人日常"},{"n":"多瑙河+萨瓦河交汇处","r":"Kalemegdan公园看两河汇合日落，Free walking tour了解被炸44次的城市故事"},{"n":"Skadarlija波西米亚街","r":"Kafana小酒馆现场音乐+ćevapi+rakija"}],"nt":"Belgrade重人文+食物，自然放在Zlatibor\nSkadarlija的kafana必体验\n塞尔维亚食物份量巨大，一份RM15够两人\n→ 之后去Zlatibor山区","cl":"春装","bg":1500},{"id":15,"date":"2027-04-23","days":4,"sch":false,"co":"Serbia","ci":"Zlatibor","tmp":"12°C","tz":"-7h","tr":"Belgrade→Zlatibor bus 4hr","tt":"bus","tc":80,"ts":"confirmed","food":130,"stay":150,"sl":"","lt":40,"tick":20,"oth":80,"st":"confirmed","pl":[{"n":"★ Uvac Canyon 乌瓦茨大峡谷","r":"1.5hr，河流蜿蜒成完美S形，塞尔维亚NO.1自然！翼展2.5m秃鹰在峡谷盘旋，可坐船进入"},{"n":"★ Mokra Gora + Šargan Eight铁路","r":"30min，8字形窄轨铁路穿22条隧道5座桥，风景绝美+Kusturica导演的Drvengrad木头村"},{"n":"Tara National Park","r":"1hr，Drina River峡谷\"河中小屋\"+原始森林步道"}],"nt":"全塞尔维亚最壮观的自然景观集中区\nUvac Canyon建议坐船+观景台都去\n→ 之后去Montenegro Kotor约6hr巴士","cl":"外套+登山鞋","bg":900},{"id":16,"date":"2027-04-27","days":7,"sch":false,"co":"Montenegro","ci":"Kotor","tmp":"18°C","tz":"-7h","tr":"Zlatibor→Kotor Bus ~6hr","tt":"bus","tc":100,"ts":"confirmed","food":130,"stay":150,"sl":"https://www.booking.com/Share-CV5rgJP; https://www.booking.com/Share-HJZAuv; ","lt":40,"tick":30,"oth":80,"st":"confirmed","pl":[{"n":"Kotor Bay 峡湾步道 1hrs €5","r":"步行，欧洲唯一峡湾型海湾，山插入海中，每个转弯都是明信片"},{"n":"★ Lovćen National Park","r":"1.5hr，盘山公路25个发夹弯到1749m山顶，360°看全黑山+海湾+群山"},{"n":"Perast + Our Lady of the Rocks","r":"20min船，安静海湾小镇坐船到海中小岛，日落时最宁静"}],"nt":"住Dobrota（Kotor旁5min，安静便宜）\nNjeguški steak（烟熏火腿包奶酪卷）必吃\n5月开始旺季涨价注意","cl":"春装+防晒","bg":700},{"id":17,"date":"2027-05-04","days":5,"sch":false,"co":"Montenegro","ci":"Žabljak","tmp":"8°C","tz":"-7h","tr":"Kotor→Žabljak Bus ~4hr","tt":"bus","tc":105,"ts":"confirmed","food":130,"stay":130,"sl":"","lt":30,"tick":20,"oth":80,"st":"confirmed","pl":[{"n":"★ Black Lake 黑湖","r":"步行即达，Durmitor明珠，深蓝湖泊+针叶林+雪峰，绕湖3.5km超轻松"},{"n":"★ Tara River Canyon","r":"30min，欧洲最深峡谷1300m！Đurđevića大桥上往下看会腿软，5月可漂流"},{"n":"Durmitor冰川湖群","r":"1-3hr步道，除黑湖外17个冰川湖，5月初薄冰+雪峰美到窒息，选Zminje Lake轻松路线"}],"nt":"增加到5天（原3天太赶）\nGuesthouse~RM60/晚含饭\n★ 优化关键：从Žabljak直接去Sarajevo(5-6hr)而不是回Kotor！省时省钱","cl":"保暖+登山鞋","bg":1200},{"id":18,"date":"2027-05-09","days":14,"sch":false,"co":"Bosnia","ci":"Sarajevo","tmp":"18°C","tz":"-7h","tr":"Žabljak→Sarajevo Bus ~5-6hr(经Foča)","tt":"bus","tc":100,"ts":"confirmed","food":130,"stay":130,"sl":"","lt":30,"tick":15,"oth":80,"st":"confirmed","pl":[{"n":"Vrelo Bosne 波斯尼亚河之泉","r":"30min，清澈泉水涌出形成绿松石色小湖+天鹅，Sarajevo人最爱的散步地"},{"n":"★ Skakavac Waterfall","r":"1hr步行，穿过森林到98m高瀑布，Bosnia最高瀑布之一，5月水量充沛"},{"n":"★ Bjelašnica + Lukomir Village","r":"40min，1984冬奥废弃滑雪场+Bosnia最高永久村庄，石头房+高山草甸+羊群+5月野花"},{"n":"★ Blagaj Tekke","r":"2hr，修道院建在200m悬崖底，Buna河从洞穴涌出翡翠色，像fantasy电影场景。河边吃鳟鱼"},{"n":"Jajce 瀑布城","r":"2.5hr，市中心20m大瀑布！Pliva Lakes水磨坊群+翠绿湖水=Bosnia最上镜画面"}],"nt":"全行程性价比最高旅居地之一！\nĆevapi是信仰 — Baščaršija的Željo排队也要吃，一份RM8-10\n波斯尼亚咖啡+Turkish delight每天仪式\n★ Free walking tour必参加，围城战争故事会改变对生命的看法","cl":"春夏装+薄外套","bg":2200},{"id":19,"date":"2027-05-23","days":6,"sch":true,"co":"Slovenia","ci":"Ljubljana","tmp":"22°C","tz":"-7h","tr":"Sarajevo→Zagreb €48(住一晚保护腰)→Ljubljana €13","tt":"bus","tc":290,"ts":"confirmed","food":130,"stay":130,"sl":"","lt":40,"tick":30,"oth":100,"st":"confirmed","pl":[{"n":"★ Lake Bohinj 博希尼湖","r":"1.5hr，比Bled更美更安静！Julian Alps雪峰倒映翡翠湖面，Vogel缆车看全景"},{"n":"★ Vintgar Gorge","r":"1.5hr，木栈道走在翡翠激流上方1.6km，尽头13m瀑布，早上去避人群"},{"n":"Lake Bled","r":"1.5hr，著名的湖心小岛教堂，搭配Bohinj一起去"}],"nt":"Slovenia物价比巴尔干贵，多自炊省钱\nMercator超市有好东西\nŠtruklji面卷+Kremna rezina奶油蛋糕\n→ 之后去Bovec体验Soča河谷","cl":"春夏装","bg":2200},{"id":20,"date":"2027-05-29","days":4,"sch":true,"co":"Slovenia","ci":"Bovec","tmp":"20°C","tz":"-7h","tr":"Ljubljana→Bovec Bus 3hr(经Vršič Pass 50个发夹弯绝景公路！坐右边窗)","tt":"bus","tc":100,"ts":"confirmed","food":130,"stay":150,"sl":"","lt":20,"tick":20,"oth":100,"st":"confirmed","pl":[{"n":"★ Soča River 翡翠河","r":"就在身边，欧洲最美河流之一，蓝绿色水不真实，Soča Trail沿河步道"},{"n":"★ Kozjak Waterfall","r":"20min，藏在岩洞里的瀑布！穿岩缝进入天然圆形岩室，瀑布落入发光绿色水潭，像龙宫"},{"n":"Tolmin Gorge","r":"1hr，Triglav国家公园最低入口，木栈道穿深切峡谷，比Vintgar安静更有探险感"},{"n":"Boka Waterfall","r":"Slovenia最强力瀑布，139m落差"}],"nt":"Soča Valley = 自然密度极高！\n5月底水虽冷但可以在河里游泳了","cl":"春夏装+轻便登山鞋","bg":1100},{"co":"Austria","ci":"Vienna","days":3,"tmp":"20°C ","tz":"-7hr","sch":true,"st":"planning","tr":"Tarvisio Boscoverde → Austria 8hrs €38","tt":"bus","tc":200,"ts":"confirmed","food":130,"stay":180,"sl":"","lt":50,"tick":80,"oth":100,"bg":2000,"cl":"","id":1775659441154,"pl":[],"nt":"","date":"2027-06-02"},{"id":23,"date":"2027-06-05","days":3,"sch":true,"co":"Czech Republic","ci":"Prague","tmp":"24°C","tz":"-7h","tr":"Vienna→Prague Train 4hrs €21","tt":"train","tc":85,"ts":"confirmed","food":130,"stay":250,"sl":"","lt":50,"tick":20,"oth":100,"st":"planning","pl":[{"n":"★★ Bohemian Switzerland","r":"2hr火车，欧洲最大天然砂岩拱门！Edmund's Gorge坐船穿幽暗峡谷，Narnia灵感地，亚洲旅客几乎不知道"},{"n":"Kokořínsko谷地","r":"1.5hr，隐秘砂岩谷，蘑菇形岩石柱+中世纪岩洞住所遗迹，连捷克人都少去"},{"n":"Český Kras山谷","r":"45min，石灰岩山谷+野花草甸+化石，轻松下午散步"}],"nt":"★ 不要在旅游区吃饭！\n去Žižkov或Vinohrady区找hospoda（啤酒馆）\n0.5L捷克啤酒~RM5（全球最便宜最好喝）\nTrdelník烟囱蛋糕是游客陷阱\n真正吃：Svíčková炖牛肉、Vepřo-knedlo-zelo烤猪肉\n→ 飞Barcelona廉航Ryanair/Wizz ~RM200-400","cl":"夏装","bg":1100},{"id":21,"date":"2027-06-08","days":5,"sch":true,"co":"Poland","ci":"Kraków","tmp":"22°C","tz":"-7h","tr":"Prague→Kraków  6hrs €14 Train","tt":"train","tc":100,"ts":"confirmed","food":80,"stay":80,"sl":"","lt":50,"tick":15,"oth":100,"st":"planning","pl":[{"n":"★ Ojców National Park","r":"30min公交，石灰岩峡谷+天然石门+溶洞+森林，下班后去走2hr完美"},{"n":"★ Dunajec River Gorge 漂流","r":"2hr，传统木筏穿波兰斯洛伐克边境峡谷，300m悬崖+清澈河水，独一无二体验"},{"n":"Kazimierz区","r":"步行，最好的cafe和pierogi饺子区"}],"nt":"★ 取代Austria！物价只有1/5，风景不输\n6月是最好季节\nPierogi饺子、Żurek酸汤必吃\nKazimierz区cafe文化成熟，适合旅居\n→ Zakopane巴士只要2hr","cl":"春夏装","bg":900},{"id":22,"date":"2027-06-13","days":5,"sch":true,"co":"Poland","ci":"Zakopane","tmp":"18°C","tz":"-7h","tr":"Kraków→Zakopane Bus 2hr","tt":"bus","tc":50,"ts":"confirmed","food":80,"stay":120,"sl":"","lt":50,"tick":10,"oth":100,"st":"planning","pl":[{"n":"★★ Morskie Oko 海之眼","r":"步行2-3hr，波兰第一美景！Tatra山脉翡翠色高山湖+2000m雪峰环绕，山路平缓腰友好"},{"n":"★ Valley of Five Polish Lakes","r":"全天，从Morskie Oko继续往上，5个串联冰川湖每个颜色不同，6月刚解冻冰湖雪山同框"},{"n":"Kościeliska Valley","r":"2hr来回，最轻松的Tatra宽谷步道，石灰岩壁+瀑布+Mroźna冰洞"},{"n":"Gubałówka缆车","r":"缆车上去看Tatra全景"}],"nt":"Tatra Mountains = \"小阿尔卑斯\"！\nOscypek烟熏羊奶酪（烤配蔓越莓酱）必吃\nKwaśnica酸菜汤、Placki po zbójnicku土豆饼\n物价是Austria的1/4-1/5\n→ 回Kraków 飞spain","cl":"登山鞋+薄外套","bg":800},{"id":24,"date":"2027-06-18","days":3,"sch":true,"co":"Spain","ci":"Barcelona","tmp":"26°C","tz":"-7h","tr":"Kraków→Barcelona 廉航 3hr ","tt":"flight","tc":180,"ts":"confirmed","food":200,"stay":240,"sl":"","lt":50,"tick":30,"oth":200,"st":"planning","pl":[{"n":"★ Montserrat山","r":"1hr火车，锯齿状砂岩山峰如外星，齿轮火车上山后岩柱间步道，最高处看地中海+比利牛斯"},{"n":"Costa Brava海岸步道","r":"1.5hr，Camí de Ronda古走私者小路，悬崖+松林+蓝绿海水，可在隐秘海湾游泳"}],"nt":"Menú del día每日套餐=省钱神器（前菜+主菜+甜点+面包+饮料~RM40-55）\n下午2-5pm siesta很多店关门\n→ 之后去Granada（自然重点）","cl":"夏装+防晒+帽","bg":1800},{"id":26,"date":"2027-06-21","days":8,"sch":true,"co":"Spain","ci":"Madrid","tmp":"32°C","tz":"-7h","tr":"Barcelona →Madrid flight 4hr","tt":"flight","tc":450,"ts":"confirmed","food":150,"stay":250,"sl":"","lt":50,"tick":30,"oth":200,"st":"planning","pl":[{"n":"Sierra de Guadarrama","r":"1hr，Madrid北面国家公园，松林+花岗岩峰+高山湖，Peñalara(2428m)多条3-5hr步道"},{"n":"Patones de Arriba","r":"1hr，隐藏在山里的石板村，据说几百年不知外界存在，免费周围山谷步道几乎零游客"}],"nt":"Madrid减少到8天（原14天太多）\nSegovia daytrip罗马水道桥值得去","cl":"夏装+防晒+帽","bg":2800},{"id":25,"date":"2027-06-29","days":4,"sch":true,"co":"Spain","ci":"Granada","tmp":"30°C","tz":"-7h","tr":"Madrid→Granada /Train 5hrs €30/ 3.5hrs €63","tt":"train","tc":180,"ts":"confirmed","food":150,"stay":180,"sl":"","lt":50,"tick":20,"oth":200,"st":"confirmed","pl":[{"n":"★ Sierra Nevada 内华达山脉","r":"45min，伊比利亚最高山脉(3479m)！6-7月残雪+野花，巴士到2500m直接走高山草甸"},{"n":"★ Las Alpujarras白色山村","r":"1.5hr，Sierra Nevada南坡北非摩尔人白色小村(Pampaneira, Bubión, Capileira)，吃Jamón Serrano+Migas"},{"n":"★ Caminito del Rey","r":"2hr，建在100m悬崖上的步道穿El Chorro峡谷，曾是世界最危险步道，需提前网上预约"}],"nt":"★ 增加到7天（原2天太短）！Granada的自然资源是全西班牙最好的\nGranada tapas文化全西班牙最好——点饮料就送免费tapas！\n晚餐要等到9点以后\n→ 之后去Madrid","cl":"夏装+登山鞋+防晒","bg":1800},{"id":27,"date":"2027-07-03","days":5,"sch":true,"co":"Portugal","ci":"Lisbon","tmp":"28°C","tz":"-8h","tr":"Madrid→Lisbon Flight 1hr","tt":"flight","tc":250,"ts":"confirmed","food":200,"stay":280,"sl":"","lt":50,"tick":20,"oth":200,"st":"confirmed","pl":[{"n":"★ Arrábida Natural Park","r":"1hr，崖壁海岸+松林延伸到悬崖边+加勒比蓝海水，Praia de Galapinhos欧洲最美海滩之一"},{"n":"Rota Vicentina海岸步道","r":"1.5hr，西海岸野性悬崖步道，风蚀悬崖+大西洋惊涛，没护栏没开发"}],"nt":"减少到5天，把时间留给Madeira\n→ Madeira飞1.5hr","cl":"夏装+舒适鞋","bg":1500},{"id":28,"date":"2027-07-08","days":6,"sch":true,"co":"Portugal","ci":"Madeira","tmp":"24°C","tz":"-8h","tr":"Lisbon→Madeira Flight 1.5hr","tt":"flight","tc":200,"ts":"confirmed","food":150,"stay":300,"sl":"","lt":50,"tick":10,"oth":200,"st":"planning","pl":[{"n":"★★ Pico Arieiro→Pico Ruivo 云上步道","r":"全天，在云层之上走火山山脊！脚下翻滚云海，穿岩洞隧道，6个月旅程最震撼自然体验之一"},{"n":"★ Levada 25 Fontes","r":"半天，沿古灌溉水渠走月桂林，到达25条泉水同时流下的瀑布岩壁，全程平坦腰友好"},{"n":"Levada Caldeirão Verde","r":"半天，穿4个岩洞隧道（带手电），悬崖边窄渠道到苔藓覆盖山谷+100m瀑布，侏罗纪公园场景"},{"n":"Cabo Girão 580m海崖","r":"欧洲最高海崖之一，玻璃地板观景台+缆车到崖底隐秘农场海滩"},{"n":"Porto Moniz 火山泳池","r":"30min，火山熔岩形成的天然岩石泳池，在火山岩池里游泳看大西洋"}],"nt":"★ 增加到6天！旅程完美句号\n6个月旅程中自然密度最高的地方\nPoncha（朗姆酒+蜂蜜+柠檬）岛上国饮\nEspetada月桂枝串牛肉必吃\n公共巴士可到大部分Levada步道\n可从Madeira直接飞回KL（经Istanbul/Dubai）","cl":"徒步鞋+防晒+薄外套（山顶冷）","bg":1600},{"id":29,"date":"2027-07-14","days":1,"sch":false,"co":"Malaysia","ci":"JB","tmp":"32°C","tz":"0","tr":"Porto→KL","tt":"flight","tc":2800,"ts":"confirmed","food":0,"stay":0,"sl":"","lt":0,"tick":0,"oth":0,"st":"confirmed","pl":[{"n":"回家！🏠","r":"6个月环游世界梦完成！"}],"nt":"British Airways 37h 10m (21h 20m in London)16:05 SIN T1 +2 RM 2,531 ","cl":"热带装","bg":3200}],"ck":[{"id":1,"cat":"Clothes","it":"内衣裤 5-7","pr":0,"dn":false},{"id":2,"cat":"Clothes","it":"冷帽","pr":20,"dn":false},{"id":3,"cat":"Clothes","it":"压力袜(长途)","pr":45,"dn":false},{"id":4,"cat":"Clothes","it":"长厚袜 ×4","pr":20,"dn":false},{"id":5,"cat":"Clothes","it":"围巾","pr":15,"dn":false},{"id":6,"cat":"Clothes","it":"手套","pr":10,"dn":false},{"id":7,"cat":"Clothes","it":"普通袜 ×2","pr":0,"dn":false},{"id":8,"cat":"Doc","it":"Cash","pr":0,"dn":false},{"id":9,"cat":"Doc","it":"Passport Copy","pr":0,"dn":false},{"id":10,"cat":"Doc","it":"Wise Card","pr":0,"dn":false},{"id":11,"cat":"Doc","it":"证件照 ×6","pr":15,"dn":false},{"id":12,"cat":"Others","it":"发圈","pr":5,"dn":false},{"id":13,"cat":"Others","it":"耳塞 ×2","pr":5,"dn":false},{"id":14,"cat":"Others","it":"Daypack","pr":50,"dn":false},{"id":15,"cat":"Others","it":"降噪耳机","pr":0,"dn":false},{"id":16,"cat":"Others","it":"万能转接头","pr":45,"dn":false},{"id":17,"cat":"Others","it":"防盗/Airtag","pr":100,"dn":false},{"id":18,"cat":"Others","it":"小洗衣液","pr":40,"dn":false},{"id":19,"cat":"Others","it":"折叠袋 ×2","pr":0,"dn":false},{"id":20,"cat":"Others","it":"Plaster","pr":0,"dn":false},{"id":21,"cat":"Others","it":"保温杯","pr":0,"dn":false},{"id":22,"cat":"Clothes","it":"速干毛巾","pr":15,"dn":false},{"id":23,"cat":"Others","it":"口罩 ×15","pr":0,"dn":false},{"id":24,"cat":"Work","it":"全套Charger","pr":0,"dn":false},{"id":25,"cat":"Work","it":"Laptop","pr":0,"dn":false},{"id":26,"cat":"Work","it":"Powerbank","pr":150,"dn":false},{"id":27,"cat":"外套","it":"轻羽绒","pr":0,"dn":false},{"id":28,"cat":"外套","it":"冲锋衣MH100","pr":149,"dn":false},{"id":29,"cat":"护肤","it":"Lotion+保湿+护手霜","pr":0,"dn":false},{"id":30,"cat":"护肤","it":"洗脸+润唇","pr":0,"dn":false},{"id":31,"cat":"护肤","it":"牙膏+眉笔+防晒","pr":10,"dn":false},{"id":32,"cat":"药","it":"常备药(Panadol，伤风，喉咙痛，眼药水，青药膏等)","pr":80,"dn":false},{"id":33,"cat":"药","it":"高反药，晕车药，plaster","pr":30,"dn":false},{"id":34,"cat":"衣服","it":"Heattech ×2","pr":100,"dn":false},{"id":35,"cat":"衣服","it":"速干便衣 ×2","pr":50,"dn":false},{"id":36,"cat":"衣服","it":"长袖 ×2","pr":0,"dn":false},{"id":37,"cat":"裤子","it":"Jogger","pr":50,"dn":false},{"id":38,"cat":"裤子","it":"发热Legging ×2","pr":80,"dn":false},{"id":39,"cat":"裤子","it":"运动长裤","pr":0,"dn":false},{"id":40,"cat":"鞋子","it":"拖鞋","pr":0,"dn":false},{"id":41,"cat":"鞋子","it":"轻便运动鞋","pr":0,"dn":false},{"id":42,"cat":"鞋子","it":"防水防滑鞋(主力)","pr":350,"dn":false},{"id":43,"cat":"鞋子","it":"冰爪","pr":20,"dn":false},{"id":1775743988116,"cat":"Others","it":"墨镜","pr":0,"dn":false},{"id":1775743998565,"cat":"药","it":"网球","pr":0,"dn":false},{"id":1775744016107,"cat":"Others","it":"笔","pr":0,"dn":false},{"id":1775744064160,"cat":"Others","it":"手电筒","pr":16,"dn":false},{"id":1775744133453,"cat":"Others","it":"药膏布","pr":10,"dn":false},{"id":1775744149368,"cat":"护肤","it":"小梳子","pr":0,"dn":false},{"id":1775744248924,"cat":"药","it":"刮痧板","pr":0,"dn":false}],"td":[{"id":200,"it":"申请申根签证","dn":false},{"id":201,"it":"申请国际驾照 (RM150)","dn":false},{"id":202,"it":"Nepal落地签准备(50USD)","dn":false},{"id":203,"it":"India eVisa(25USD)","dn":false},{"id":204,"it":"甲肝/伤寒疫苗","dn":false},{"id":205,"it":"Couchsurfing会员(RM85)","dn":false},{"id":206,"it":"SafetyWing旅行保险","dn":false},{"id":207,"it":"Wise卡充值","dn":false},{"id":208,"it":"通知银行出国","dn":false},{"id":209,"it":"备份文件到云端","dn":false}],"nt":[{"id":1,"t":"中心思想","c":"开心最重要，想做什么就做什么\n来都来了 去做\n去每个地方健身房+坚持锻炼\n找到人生意义\n学会和人聊天\n认识各国人\n有多少素材就拍多少\n身心健康安全回来","pin":true},{"id":2,"t":"开源方式","c":"MKT · 自媒体 · Bonus · 影片剪辑 · 当地打工","pin":false},{"id":3,"t":"节流","c":"沙发客/青旅/Aupair/Housesitting\n自煮\n走路","pin":false},{"id":4,"t":"有用Apps","c":"Omio · GuruWalk · FlixBus · EurostarSnap\nSafetyWing · Bookaway","pin":false}],"fx":[{"n":"JB房子","v":1500},{"n":"保险","v":880},{"n":"水电管理费","v":342},{"n":"WiFi","v":95},{"n":"Subscription","v":212.56},{"n":"生活费","v":100}],"pc":[{"n":"机票(已买)","v":457.95,"ok":true},{"n":"衣服等等","v":2000,"ok":false},{"n":"杂费(驾照/疫苗/签证等)","v":1200,"ok":false},{"n":"预备金","v":3500,"ok":false},{"n":"新项目","v":1500,"ok":false},{"n":"新项目","v":0,"ok":false}],"ro":{"🌍 其他":true,"🏠 回家":true,"🏔️ 南亚":true,"🐴 中亚":true,"🍷 高加索":true,"🏰 巴尔干":true,"⛰️ 中欧":true,"☀️ 西欧":true},"dwo":["stats","budget","savings","rank","todo"],"gl":[{"id":1,"cat":"💪 健身","big":"增肌+体能提升","subs":[{"n":"肌肉量+3kg","done":false,"prog":0,"dl":""},{"n":"能做10个引体向上","done":false,"prog":0,"dl":""},{"n":"每周健身4次","done":false,"prog":0,"dl":""}],"daily":["健身1小时","蛋白质摄入150g","拉伸15分钟"]},{"id":2,"cat":"💰 存钱","big":"存够旅费出发","subs":[{"n":"每月存RM3000+","done":false,"prog":0,"dl":""},{"n":"减少不必要开销","done":false,"prog":0,"dl":""},{"n":"找额外收入来源","done":false,"prog":0,"dl":""}],"daily":["记账","不买奶茶","检查优惠"]},{"id":3,"cat":"📸 内容","big":"建立自媒体基础","subs":[{"n":"学会基本剪辑","done":false,"prog":0,"dl":""},{"n":"开设旅行账号","done":false,"prog":0,"dl":""},{"n":"拍摄练习每周1次","done":false,"prog":0,"dl":""}],"daily":["看一个剪辑教程","拍一段素材","写caption练习"]},{"id":4,"cat":"🗣️ 语言","big":"英语口语流利","subs":[{"n":"能自信和外国人聊天","done":false,"prog":0,"dl":""},{"n":"学基本格鲁吉亚语问候","done":false,"prog":0,"dl":""}],"daily":["英语podcast 30min","背5个新单词","和AI练口语"]},{"id":5,"cat":"🧠 心理","big":"准备好独自上路","subs":[{"n":"克服社交焦虑","done":false,"prog":0,"dl":""},{"n":"学会独处","done":false,"prog":0,"dl":""},{"n":"建立每日routine","done":false,"prog":0,"dl":""}],"daily":["冥想10分钟","写日记","和一个陌生人说话"]}],"glm":{}};
+function ld(){try{const s=localStorage.getItem(SK);D=s?JSON.parse(s):null}catch(e){D=null}
+if(!D)D=JSON.parse(JSON.stringify(SAVED));
+if(!D.td)D.td=JSON.parse(JSON.stringify(TD0));if(!D.pc)D.pc=JSON.parse(JSON.stringify(PC0));if(!D.ro)D.ro={};if(!D.dwo)D.dwo=[...DWID];if(!D.gl)D.gl=JSON.parse(JSON.stringify(GL0));if(!D.glm)D.glm={}}
+function sv(){localStorage.setItem(SK,JSON.stringify(D))}
+function fm(n){return n!=null&&!isNaN(n)?'RM '+Math.round(n).toLocaleString():'—'}
+function fD(d){return d?new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'—'}
+function pc(a,b){return b?Math.round(a/b*100):0}
+function tI(t){return t==='flight'?'✈️':t==='bus'?'🚌':'🚂'}
+function cc(s){return(s.tc||0)+s.days*((s.food||0)+(s.stay||0)+(s.lt||0)+(s.tick||0))+(s.oth||0)}
+function tDays(){return D.stops.reduce((a,x)=>a+x.days,0)}
+function tTrip(){return D.stops.reduce((a,x)=>a+cc(x),0)}
+function tPre(){return D.pc.reduce((a,x)=>a+x.v,0)}
+function fxM(){return D.fx.reduce((a,x)=>a+x.v,0)}
+function mo(){return Math.ceil(tDays()/30)||1}
+function tAll(){return tTrip()+tPre()+fxM()*mo()}
+function schD(){let d=0;D.stops.forEach(s=>{if(s.sch)d+=s.days});return d}
+function recalc(){if(!D.stops.length)return;let d=new Date('2027-01-14');D.stops.forEach(s=>{s.date=d.toISOString().split('T')[0];d.setDate(d.getDate()+s.days)})}
+function regOf(c){for(const r of REG)if(r.c.includes(c))return r.n;return'🌍 其他'}
+function getGroups(){const g=[];let lr=null;D.stops.forEach((s,i)=>{const r=regOf(s.co);if(r!==lr){g.push({r,stops:[]});lr=r}g[g.length-1].stops.push({...s,_i:i})});return g}
+function savingsNeeded(){return tAll()-D.mi*mo()}
+function savPct(){const need=savingsNeeded();return need<=0?100:pc(D.sav,need)}
+
+// NAV
+document.querySelectorAll('.nt').forEach(t=>t.addEventListener('click',function(){
+document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+document.querySelectorAll('.nt').forEach(t=>t.classList.remove('on'));
+this.classList.add('on');document.getElementById('pg-'+this.dataset.p).classList.add('on');
+R[this.dataset.p]()}));
+function openM(h){document.getElementById('mc').innerHTML=h;document.getElementById('modal').classList.add('show')}
+function closeM(){document.getElementById('modal').classList.remove('show')}
+document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeM()});
+
+const R={};let expId=null;
+
+// Dashboard widget order
+const DWID=['stats','savings','budget','rank','todo'];
+function getDwo(){if(!D.dwo||!Array.isArray(D.dwo)||D.dwo.length!==DWID.length)D.dwo=[...DWID];return D.dwo}
+
+// ============ DASHBOARD ============
+R.dashboard=function(){
+const el=document.getElementById('pg-dashboard');
+const trip=tTrip(),all=tAll(),days=tDays(),cn=[...new Set(D.stops.map(s=>s.co))].length;
+const conf=D.stops.filter(s=>s.st==='confirmed').length;
+const bp=pc(all,D.bgt),sd=schD(),m=mo(),avail=D.sav+D.mi*m;
+const savNeed=savingsNeeded();const sp=savPct();
+// Value rank
+const cD={};D.stops.forEach(s=>{if(s.co==='Malaysia')return;if(!cD[s.co])cD[s.co]={c:0,d:0};cD[s.co].c+=cc(s);cD[s.co].d+=s.days});
+const ranked=Object.entries(cD).map(([c,d])=>({c,avg:d.d?Math.round(d.c/d.d):0,t:d.c,d:d.d})).sort((a,b)=>a.avg-b.avg);
+const tdUndone=D.td.filter(x=>!x.dn);
+
+// Savings deadline warning
+const now=new Date();const depDate=new Date('2027-01-14');
+const msLeft=depDate-now;const daysLeft=Math.max(0,Math.ceil(msLeft/(1000*60*60*24)));
+const monthsLeft=Math.max(1,Math.ceil(daysLeft/30));
+const gap=Math.max(0,savNeed-D.sav);
+const monthlyNeeded=gap>0?Math.ceil(gap/monthsLeft):0;
+const savUrgent=gap>0&&(daysLeft<270||(monthlyNeeded>D.mi*0.6));
+const savCritical=gap>0&&(daysLeft<120||(monthlyNeeded>D.mi));
+
+const dwo=getDwo();
+const W={};
+
+W.stats=`<div class="dw g4" data-wid="stats" draggable="true">
+<div class="c st"><div class="sl">总天数 · 国家</div><div class="sv" style="color:var(--acc)">${days}<small style="font-size:.75rem">天</small></div><div class="sl">${cn} 国</div></div>
+<div class="c st"><div class="sl">预计旅行花费</div><div class="sv" style="color:var(--org)">${fm(trip)}</div><div class="sl">≈${fm(Math.round(trip/days))}/天</div></div>
+<div class="c st"><div class="sl">预估总花费</div><div class="sv" style="color:${all>D.bgt?'var(--red)':'var(--grn)'}">${fm(all)}</div><div class="sl">Budget ${fm(D.bgt)}</div></div>
+<div class="c st"><div class="sl">确认进度</div><div class="sv" style="color:var(--grn)">${conf}/${D.stops.length}</div><div class="sl">${D.stops.length-conf} 未确认</div></div>
+</div>`;
+
+W.savings=`<div class="dw" data-wid="savings" draggable="true"><div class="c">
+  <div class="ct" style="cursor:grab">⠿ 🏦 存款进度 — 存够就出发！</div>
+  <div style="text-align:center;margin-bottom:6px">
+    <span style="font-size:1.6rem;font-weight:800;color:${sp>=100?'var(--grn)':'var(--org)'}">${sp>=100?'✅ Ready!':sp+'%'}</span>
+  </div>
+  <div class="pb"><div class="pf" style="width:${Math.min(sp,100)}%;background:${sp>=100?'var(--grn)':'var(--org)'}"></div></div>
+  <div class="pl"><span>存款 ${fm(D.sav)}</span><span>需要 ${fm(Math.max(0,savNeed))}</span></div>
+  <div style="font-size:.75rem;color:var(--t2);margin-top:6px">
+    总花费 ${fm(all)} − ${m}月收入 ${fm(D.mi*m)} = 需存 ${fm(Math.max(0,savNeed))}
+    ${sp>=100?'<br>🎉 存款已够！可以出发了！':` <br>还差 ${fm(gap)}`}
+  </div>
+  ${savCritical?`<div style="margin-top:8px;padding:8px 12px;border-radius:10px;background:var(--redL);border:1px solid rgba(190,110,110,.2);font-size:.82rem;color:var(--red)">
+    🚨 <strong>紧急！</strong>距出发仅剩 <strong>${daysLeft}天(${monthsLeft}个月)</strong>，还差 <strong>${fm(gap)}</strong>。每月需存 <strong>${fm(monthlyNeeded)}</strong>${monthlyNeeded>D.mi?' — 超过你月收入！需要开源或调整budget':''}
+  </div>`:savUrgent?`<div style="margin-top:8px;padding:8px 12px;border-radius:10px;background:var(--orgL);border:1px solid rgba(200,155,106,.2);font-size:.82rem;color:var(--org)">
+    ⚠️ 距出发还有 <strong>${daysLeft}天(${monthsLeft}个月)</strong>，还差 <strong>${fm(gap)}</strong>。每月需存 <strong>${fm(monthlyNeeded)}</strong>，加油！
+  </div>`:''}
+</div></div>`;
+
+W.budget=`<div class="dw" data-wid="budget" draggable="true"><div class="c">
+  <div class="ct" style="cursor:grab">⠿ 💰 Budget 进度</div>
+  <div style="text-align:center;margin-bottom:6px"><span style="font-size:1.4rem;font-weight:800;color:${bp>100?'var(--red)':bp>80?'var(--org)':'var(--grn)'}">${bp}%</span><span style="font-size:.75rem;color:var(--t2);margin-left:4px">of ${fm(D.bgt)}</span></div>
+  <div class="pb"><div class="pf" style="width:${Math.min(bp,100)}%;background:${bp>100?'var(--red)':bp>80?'var(--org)':'var(--grn)'}"></div></div>
+  <div class="pl"><span>${fm(all)}</span><span>余 ${fm(Math.max(0,D.bgt-all))}</span></div>
+  <div style="font-size:.75rem;color:var(--t2);margin-top:6px">申根: <strong style="color:${sd>80?'var(--red)':'var(--blu)'}">${sd}/90天</strong> (余${90-sd}天)</div>
+</div></div>`;
+
+W.rank=`<div class="dw" data-wid="rank" draggable="true"><div class="c"><div class="ct" style="cursor:grab">⠿ 🏆 性价比排名(日均)</div><div class="ss">
+${ranked.map((r,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--bdr)">
+<span style="width:16px;font-weight:700;color:${i<3?'var(--grn)':'var(--t3)'};font-size:.8rem">${i+1}</span>
+<span style="width:80px;font-size:.82rem;flex-shrink:0">${r.c}</span>
+<div style="flex:1;max-width:120px;height:5px;background:var(--s3);border-radius:3px"><div style="width:${pc(r.avg,ranked[ranked.length-1]?.avg||1)}%;height:100%;background:${CCOUNTRY[r.c]||CC[i]};border-radius:3px"></div></div>
+<span style="font-weight:700;min-width:80px;text-align:right;font-size:.82rem;color:${r.avg<200?'var(--grn)':r.avg>400?'var(--red)':'var(--txt)'};flex-shrink:0">${fm(r.avg)}/天</span>
+<span style="min-width:35px;text-align:right;color:var(--t2);font-size:.75rem">${r.d}天</span>
+</div>`).join('')}</div></div></div>`;
+
+W.todo=`<div class="dw" data-wid="todo" draggable="true"><div class="c"><div class="ct" style="cursor:grab">⠿ ⚠️ 待处理 (代办)</div><div class="ss">
+${tdUndone.length?tdUndone.map(t=>`<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--bdr);font-size:.82rem">
+<input type="checkbox" style="width:15px;height:15px;accent-color:var(--acc)" onchange="D.td.find(x=>x.id===${t.id}).dn=true;sv();R.dashboard()">
+<span>${t.it}</span></div>`).join(''):'<div style="padding:8px 0;font-size:.82rem;color:var(--grn)">✅ 所有代办已完成！</div>'}
+</div></div></div>`;
+
+// Render widgets in saved order
+let html=`<div class="fb" style="margin-bottom:4px"><h2 style="margin:0">📊 Dashboard <span style="font-size:.72rem;color:var(--t2);font-weight:400">拖动 ⠿ 调整位置</span></h2>
+<div style="display:flex;gap:6px"><button class="btn bs bsm" onclick="exportData()">💾 导出备份</button><button class="btn bs bsm" onclick="importData()">📂 导入</button></div></div><div id="dboard">`;
+dwo.forEach(wid=>{html+=(W[wid]||'')});
+html+=`</div>`;
+el.innerHTML=html;
+
+// Setup drag for dashboard widgets
+const board=document.getElementById('dboard');
+let dwDrag=null;
+board.querySelectorAll('.dw').forEach(w=>{
+  w.addEventListener('dragstart',e=>{dwDrag=w;w.style.opacity='.4';e.dataTransfer.effectAllowed='move'});
+  w.addEventListener('dragend',()=>{dwDrag.style.opacity='1';dwDrag=null;board.querySelectorAll('.dw').forEach(x=>x.style.borderTop='')});
+  w.addEventListener('dragover',e=>{e.preventDefault();if(w!==dwDrag)w.style.borderTop='2px solid var(--acc)'});
+  w.addEventListener('dragleave',()=>{w.style.borderTop=''});
+  w.addEventListener('drop',e=>{e.preventDefault();w.style.borderTop='';if(!dwDrag||w===dwDrag)return;
+    const ids=[...board.querySelectorAll('.dw')].map(x=>x.dataset.wid);
+    const fi=ids.indexOf(dwDrag.dataset.wid),ti=ids.indexOf(w.dataset.wid);
+    ids.splice(fi,1);ids.splice(ti,0,dwDrag.dataset.wid);
+    D.dwo=ids;sv();R.dashboard()});
+});};
+
+// ============ ITINERARY ============
+R.itinerary=function(){
+const el=document.getElementById('pg-itinerary');
+const groups=getGroups();
+let h=`<div class="fb" style="margin-bottom:14px"><h2 style="margin:0">🗓️ 行程安排 <span style="font-size:.75rem;color:var(--t2);font-weight:400">点击展开 · 拖动排序</span></h2><button class="btn bp" onclick="openAdd()">+ 添加</button></div>`;
+groups.forEach(g=>{
+const open=D.ro[g.r]!==false;
+const rc=g.stops.reduce((a,x)=>a+cc(x),0),rd=g.stops.reduce((a,x)=>a+x.days,0),rconf=g.stops.filter(x=>x.st==='confirmed').length;
+h+=`<div class="rg"><div class="rh" onclick="D.ro['${g.r}']=!${open};sv();R.itinerary()">
+<span class="ra ${open?'open':''}">▶</span><span class="rt">${g.r}</span>
+<div class="rs"><span>${rd}天</span><span>${fm(rc)}</span><span>${rconf}/${g.stops.length}✓</span></div></div>`;
+if(open){h+=`<div class="rb">`;
+g.stops.forEach(s=>{
+const exp=expId===s.id,cost=cc(s),over=cost>s.bg&&s.bg>0;
+const coCol=CCOUNTRY[s.co]||'var(--acc)';
+h+=`<div class="it" draggable="true" data-i="${s._i}" style="border-left:4px solid ${coCol}" ondragstart="ds(event,${s._i})" ondragover="dv(event)" ondrop="dp(event,${s._i})" ondragend="de(event)" onclick="tgl(${s.id})">
+<div class="ir">
+<div class="inum" style="background:${coCol}">${s._i+1}</div>
+<div><div style="font-weight:600;color:${coCol}">${tI(s.tt)} ${s.co} ${s.sch?'<span class="tg tsc">申根</span>':''}</div><div style="color:var(--acc2);font-size:.85rem">${s.ci}</div></div>
+<span style="background:var(--accL);padding:2px 10px;border-radius:10px;font-size:.75rem;font-weight:600">${s.days}天</span>
+<span style="font-size:.82rem">${s.tmp||'?'}</span>
+<span class="tg ${s.st==='confirmed'?'tok':'tpl'}">${s.st==='confirmed'?'已确认':'计划中'}</span>
+${over?'<span class="tg twr">超预算</span>':''}
+<span style="margin-left:auto;font-size:.78rem;color:var(--t2)">${fD(s.date)}</span>
+</div>
+<div style="display:flex;gap:14px;margin-top:6px;font-size:.78rem;color:var(--t2)">
+<span>🚗${fm(s.tc)} <span class="tg ${s.ts==='confirmed'?'tok':'tpl'}" style="font-size:.6rem">${s.ts}</span></span>
+<span>🍽${fm(s.food)}/天</span><span>🏠${fm(s.stay)}/晚</span>
+<span style="margin-left:auto;font-weight:700;color:${over?'var(--red)':'var(--acc2)'}">总${fm(cost)}/${fm(s.bg)}</span>
+</div></div>`;
+if(exp){h+=`<div class="ix" onclick="event.stopPropagation()">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:.82rem;margin-bottom:8px">
+<div>🌡${s.tmp||'?'} · ⏰${s.tz||'?'} · 👕${s.cl||'—'}</div>
+<div>${s.tr?'🚀'+s.tr:''}${s.sl?` · <a href="${s.sl}" target="_blank">🔗住宿</a>`:''}</div></div>
+${s.pl&&s.pl.length?`<div style="margin-bottom:8px"><strong style="font-size:.78rem">📍 景点</strong>
+${s.pl.map((p,pi)=>`<div class="pi"><span style="color:var(--acc);flex-shrink:0">•</span><div style="flex:1"><strong>${p.n}</strong>${p.r?` <span style="color:var(--t2)">— ${p.r}</span>`:''}</div>
+<button class="bg" onclick="ePl(${s.id},${pi})">✏️</button><button class="bg" style="color:var(--red)" onclick="rPl(${s.id},${pi})">×</button></div>`).join('')}
+<button class="btn bs bsm" style="margin-top:4px" onclick="aPl(${s.id})">+ 景点</button></div>`
+:'<button class="btn bs bsm" style="margin-bottom:8px" onclick="aPl(${s.id})">+ 景点</button>'}
+<textarea style="width:100%;min-height:40px;font-size:.82rem" placeholder="备註..." onchange="D.stops[${s._i}].nt=this.value;sv()">${s.nt||''}</textarea>
+<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+<button class="btn bs bsm" onclick="editS(${s.id})">✏️编辑</button>
+<button class="btn bsm" style="background:${s.st==='confirmed'?'var(--s3)':'var(--grn)'};color:${s.st==='confirmed'?'var(--txt)':'#fff'}" onclick="D.stops[${s._i}].st=D.stops[${s._i}].st==='confirmed'?'planning':'confirmed';sv();R.itinerary()">${s.st==='confirmed'?'改为计划中':'✓确认'}</button>
+<button class="btn bd bsm" onclick="if(confirm('删除?')){D.stops.splice(${s._i},1);recalc();sv();R.itinerary()}">删除</button>
+</div></div>`}
+});h+=`</div>`}h+=`</div>`});
+el.innerHTML=h;
+};
+window.tgl=id=>{expId=expId===id?null:id;R.itinerary()};
+window.ds=(e,i)=>{e.dataTransfer.setData('text/plain',i);e.currentTarget.classList.add('dragging')};
+window.dv=e=>{e.preventDefault();e.currentTarget.classList.add('dragover')};
+window.de=e=>{document.querySelectorAll('.it').forEach(x=>x.classList.remove('dragging','dragover'))};
+window.dp=(e,ti)=>{e.preventDefault();e.currentTarget.classList.remove('dragover');const fi=+e.dataTransfer.getData('text/plain');if(fi!==ti){const it=D.stops.splice(fi,1)[0];D.stops.splice(ti,0,it);recalc();sv();R.itinerary()}};
+window.aPl=id=>{const s=D.stops.find(x=>x.id===id);if(!s.pl)s.pl=[];
+openM(`<h3>+ 景点</h3><div class="fr"><label>名称</label><input id="pn"></div><div class="fr"><label>备注(交通/时间/budget)</label><input id="pr"></div>
+<div class="ma"><button class="btn bs" onclick="closeM()">取消</button><button class="btn bp" onclick="D.stops.find(x=>x.id===${id}).pl.push({n:document.getElementById('pn').value,r:document.getElementById('pr').value});sv();closeM();R.itinerary()">添加</button></div>`)};
+window.ePl=(id,pi)=>{const p=D.stops.find(x=>x.id===id).pl[pi];
+openM(`<h3>编辑景点</h3><div class="fr"><label>名称</label><input id="pn" value="${p.n}"></div><div class="fr"><label>备注</label><input id="pr" value="${p.r||''}"></div>
+<div class="ma"><button class="btn bs" onclick="closeM()">取消</button><button class="btn bp" onclick="D.stops.find(x=>x.id===${id}).pl[${pi}]={n:document.getElementById('pn').value,r:document.getElementById('pr').value};sv();closeM();R.itinerary()">保存</button></div>`)};
+window.rPl=(id,pi)=>{D.stops.find(x=>x.id===id).pl.splice(pi,1);sv();R.itinerary()};
+
+function sForm(s,p){return`<div class="fg"><div class="fr"><label>国家</label><select id="${p}co" onchange="uCi('${p}')">
+${Object.keys(CDB).map(c=>`<option ${c===s.co?'selected':''}>${c}</option>`).join('')}</select></div>
+<div class="fr"><label>城市</label><select id="${p}ci">${(CDB[s.co]||[]).map(c=>`<option ${c===s.ci?'selected':''}>${c}</option>`).join('')}<option value="__">自定义</option></select>
+<input id="${p}cic" style="display:${s.ci&&!(CDB[s.co]||[]).includes(s.ci)?'block':'none'};margin-top:3px" value="${s.ci||''}"></div></div>
+<div class="fg"><div class="fr"><label>天数</label><input id="${p}d" type="number" value="${s.days||5}"></div><div class="fr"><label>温度</label><input id="${p}tmp" value="${s.tmp||''}"></div></div>
+<div class="fg"><div class="fr"><label>时差</label><input id="${p}tz" value="${s.tz||''}"></div><div class="fr"><label>申根</label><select id="${p}sch"><option value="0" ${!s.sch?'selected':''}>否</option><option value="1" ${s.sch?'selected':''}>是</option></select></div></div>
+<div class="fg"><div class="fr"><label>状态</label><select id="${p}st"><option value="confirmed" ${s.st==='confirmed'?'selected':''}>已确认</option><option value="planning">计划中</option></select></div>
+<div class="fr"><label>交通类型</label><select id="${p}tt"><option value="bus" ${s.tt==='bus'?'selected':''}>Bus</option><option value="flight" ${s.tt==='flight'?'selected':''}>Flight</option><option value="train" ${s.tt==='train'?'selected':''}>Train</option></select></div></div>
+<div class="fr"><label>交通方式</label><input id="${p}tr" value="${s.tr||''}"></div>
+<div class="fg"><div class="fr"><label>交通费RM</label><input id="${p}tc" type="number" value="${s.tc||0}"></div><div class="fr"><label>交通状态</label><select id="${p}ts"><option value="confirmed" ${s.ts==='confirmed'?'selected':''}>已确认</option><option value="planning">计划中</option></select></div></div>
+<div class="fg"><div class="fr"><label>食/天</label><input id="${p}f" type="number" value="${s.food||0}"></div><div class="fr"><label>住/晚</label><input id="${p}s" type="number" value="${s.stay||0}"></div></div>
+<div class="fr"><label>住宿Link</label><input id="${p}sl" value="${s.sl||''}"></div>
+<div class="fg"><div class="fr"><label>当地交通/天</label><input id="${p}lt" type="number" value="${s.lt||0}"></div><div class="fr"><label>门票etc/天</label><input id="${p}tk" type="number" value="${s.tick||0}"></div></div>
+<div class="fg"><div class="fr"><label>Other花费</label><input id="${p}ot" type="number" value="${s.oth||0}"></div><div class="fr"><label>预计Budget</label><input id="${p}bg" type="number" value="${s.bg||0}"></div></div>
+<div class="fr"><label>穿衣建议</label><input id="${p}cl" value="${s.cl||''}"></div>`}
+function rForm(p){const ci=document.getElementById(p+'ci'),cic=document.getElementById(p+'cic');
+const city=cic.style.display!=='none'?cic.value:(ci.value==='__'?cic.value:ci.value);
+return{co:document.getElementById(p+'co').value,ci:city,days:+document.getElementById(p+'d').value||1,
+tmp:document.getElementById(p+'tmp').value,tz:document.getElementById(p+'tz').value,
+sch:document.getElementById(p+'sch').value==='1',st:document.getElementById(p+'st').value,
+tr:document.getElementById(p+'tr').value,tt:document.getElementById(p+'tt').value,
+tc:+document.getElementById(p+'tc').value,ts:document.getElementById(p+'ts').value,
+food:+document.getElementById(p+'f').value,stay:+document.getElementById(p+'s').value,
+sl:document.getElementById(p+'sl').value,lt:+document.getElementById(p+'lt').value,
+tick:+document.getElementById(p+'tk').value,oth:+document.getElementById(p+'ot').value,
+bg:+document.getElementById(p+'bg').value,cl:document.getElementById(p+'cl').value}}
+window.uCi=p=>{const co=document.getElementById(p+'co').value,ci=document.getElementById(p+'ci');
+ci.innerHTML=(CDB[co]||[]).map(c=>`<option>${c}</option>`).join('')+'<option value="__">自定义</option>';
+document.getElementById(p+'cic').style.display='none';
+ci.onchange=()=>{document.getElementById(p+'cic').style.display=ci.value==='__'?'block':'none'}};
+window.openAdd=()=>{openM(`<h3>+ 添加站点</h3>${sForm({co:'Georgia',days:5,bg:2000,st:'planning',ts:'planning',tt:'bus'},'a')}
+<div class="ma"><button class="btn bs" onclick="closeM()">取消</button>
+<button class="btn bp" onclick="const f=rForm('a');f.id=Date.now();f.pl=[];f.nt='';D.stops.push(f);recalc();sv();closeM();R.itinerary()">添加</button></div>`);
+document.getElementById('aci').onchange=()=>{document.getElementById('acic').style.display=document.getElementById('aci').value==='__'?'block':'none'}};
+window.editS=id=>{const s=D.stops.find(x=>x.id===id);const idx=D.stops.indexOf(s);
+openM(`<h3>编辑 ${s.co}·${s.ci}</h3>${sForm(s,'e')}
+<div class="ma"><button class="btn bs" onclick="closeM()">取消</button>
+<button class="btn bp" onclick="const f=rForm('e');Object.assign(D.stops[${idx}],f);recalc();sv();closeM();R.itinerary()">保存</button></div>`);
+document.getElementById('eci').onchange=()=>{document.getElementById('ecic').style.display=document.getElementById('eci').value==='__'?'block':'none'}};
+
+// ============ CALENDAR ============
+R.calendar=function(){
+const el=document.getElementById('pg-calendar');
+if(!D.stops.length){el.innerHTML='<h2>📅</h2>';return}
+const dm={};D.stops.forEach(s=>{const d=new Date(s.date);for(let i=0;i<s.days;i++){dm[d.toISOString().split('T')[0]]=s;d.setDate(d.getDate()+1)}});
+const endS=D.stops[D.stops.length-1],end=new Date(endS.date);end.setDate(end.getDate()+endS.days);
+let h=`<h2>📅 日历视图 <span style="font-size:.78rem;color:var(--t2);font-weight:400">点击编辑行程</span></h2>`;
+let cur=new Date(2027,0,1);
+while(cur<=end){
+const y=cur.getFullYear(),m=cur.getMonth();
+h+=`<div style="margin-bottom:18px"><div style="font-size:1rem;font-weight:700;color:var(--acc2);margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid var(--acc)">${cur.toLocaleDateString('en',{month:'long',year:'numeric'})}</div>
+<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">`;
+['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d=>h+=`<div style="font-size:.65rem;color:var(--t2);text-align:center;padding:3px;font-weight:600">${d}</div>`);
+let dow=(new Date(y,m,1).getDay()+6)%7;
+for(let i=0;i<dow;i++)h+=`<div></div>`;
+const dim=new Date(y,m+1,0).getDate();
+for(let d=1;d<=dim;d++){
+const key=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;const s=dm[key];
+const col=s?(CCOUNTRY[s.co]||'var(--acc)'):'transparent';
+h+=`<div class="cal-day ${s?'has':''}" style="background:${s?col+'18':'transparent'};border-color:${s?col+'40':'transparent'}" ${s?`onclick="calEdit(${s.id})"`:''}>
+<div style="font-weight:600;font-size:.7rem;color:var(--t2)">${d}</div>
+${s?`<div style="font-weight:700;color:${col};font-size:.65rem;line-height:1.1">${s.ci}</div><div style="font-size:.6rem;color:var(--t2)">${s.tmp||''}</div>`:''}
+${FEST[key]?`<div style="font-size:.55rem;color:var(--org);font-weight:700;line-height:1" title="${FEST[key].e}">🎪${FEST[key].n.substring(0,8)}</div>`:''}</div>`;
+}h+=`</div></div>`;cur=new Date(y,m+1,1)}
+el.innerHTML=h;
+};
+window.calEdit=id=>{const s=D.stops.find(x=>x.id===id);const idx=D.stops.indexOf(s);
+openM(`<h3>编辑 ${s.co}·${s.ci}</h3>${sForm(s,'ce')}
+<div class="ma"><button class="btn bs" onclick="closeM()">取消</button>
+<button class="btn bp" onclick="const f=rForm('ce');Object.assign(D.stops[${idx}],f);recalc();sv();closeM();R.calendar()">保存</button></div>`);
+document.getElementById('ceci').onchange=()=>{document.getElementById('cecic').style.display=document.getElementById('ceci').value==='__'?'block':'none'}};
+
+// ============ BUDGET ============
+R.budget=function(){
+const el=document.getElementById('pg-budget');
+const trip=tTrip(),pre=tPre(),m=mo(),fM=fxM(),fxT=fM*m,all=trip+pre+fxT;
+const avail=D.sav+D.mi*m;
+const cat={tr:0,food:0,stay:0,lt:0,tick:0,oth:0};
+D.stops.forEach(s=>{cat.tr+=(s.tc||0);cat.food+=s.days*(s.food||0);cat.stay+=s.days*(s.stay||0);cat.lt+=s.days*(s.lt||0);cat.tick+=s.days*(s.tick||0);cat.oth+=(s.oth||0)});
+const catL=['城际交通','餐饮','住宿','当地交通','门票/社交','Other'],catV=[cat.tr,cat.food,cat.stay,cat.lt,cat.tick,cat.oth];
+const catS=catV.reduce((a,b)=>a+b,0);
+const cT={};D.stops.forEach(s=>{if(s.co!=='Malaysia')cT[s.co]=(cT[s.co]||0)+cc(s)});
+const confT=D.stops.filter(s=>s.ts==='confirmed').reduce((a,x)=>a+(x.tc||0),0);
+const planT=D.stops.filter(s=>s.ts!=='confirmed').reduce((a,x)=>a+(x.tc||0),0);
+
+let h=`<h2>💰 Budget 管理</h2>
+<div class="c"><div class="ct">🧮 收入 · 存款 · 设定</div>
+<div class="fg" style="grid-template-columns:1fr 1fr 1fr 1fr;gap:10px">
+<div class="fr"><label>每月收入 RM</label><input type="number" value="${D.mi}" onchange="D.mi=+this.value;sv();R.budget()"></div>
+<div class="fr"><label>现有存款 RM</label><input type="number" value="${D.sav}" onchange="D.sav=+this.value;sv();R.budget()"></div>
+<div class="fr"><label>总Budget RM</label><input type="number" value="${D.bgt}" onchange="D.bgt=+this.value;sv();R.budget()"></div>
+<div class="fr"><label>旅行月数</label><input type="number" value="${m}" disabled></div>
+</div>
+${(()=>{const gap=all-avail;return gap>0?`<div class="calcr calcbad">⚠️ 资金缺口 <strong>${fm(gap)}</strong>。需月入 ${fm(Math.ceil((all-D.sav)/m))} 才够。</div>`
+:`<div class="calcr calcok">✅ 资金充足！余 <strong>${fm(-gap)}</strong>。</div>`})()}
+<div style="font-size:.78rem;color:var(--t2);margin-top:6px">交通已确认 <strong style="color:var(--grn)">${fm(confT)}</strong> · 计划中 <strong style="color:var(--org)">${fm(planT)}</strong></div>
+</div>
+
+<div class="c"><div class="ct">📋 行前费用 <span style="font-size:.72rem;color:var(--t2);font-weight:400">(auto sync到总花费)</span></div>
+<div class="ss">${D.pc.map((p,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bdr)">
+<span style="flex:1">${p.n}</span>
+<span class="tg ${p.ok?'tok':'tpl'}" style="cursor:pointer" onclick="D.pc[${i}].ok=!D.pc[${i}].ok;sv();R.budget()">${p.ok?'✓已付':'未付'}</span>
+<input type="number" value="${p.v}" style="width:90px;text-align:right" onchange="D.pc[${i}].v=+this.value;sv();R.budget()">
+</div>`).join('')}
+<button class="btn bs bsm" style="margin-top:6px" onclick="D.pc.push({n:'新项目',v:0,ok:false});sv();R.budget()">+ 添加</button>
+</div>
+<div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:700;border-top:2px solid var(--bdr);margin-top:6px"><span>行前总计</span><span>${fm(pre)}</span></div>
+</div>
+
+<div class="g3">
+<div class="c st"><div class="sl">预计旅行花费</div><div class="sv" style="color:var(--acc)">${fm(trip)}</div><div class="sl">≈${fm(Math.round(trip/tDays()))}/天</div></div>
+<div class="c st"><div class="sl">行前+固定(${m}月)</div><div class="sv" style="color:var(--org)">${fm(pre+fxT)}</div></div>
+<div class="c st"><div class="sl">预估总花费</div><div class="sv" style="color:${all>D.bgt?'var(--red)':'var(--grn)'}">${fm(all)}</div><div class="sl">${all>D.bgt?'⚠️超出'+fm(all-D.bgt):'✅预算内'}</div></div>
+</div>
+
+<div class="g2">
+<div class="c"><div class="ct">📊 项目占比</div><div class="ss">${catL.map((l,i)=>({l,v:catV[i],ci:i})).sort((a,b)=>b.v-a.v).map(x=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0">
+<span style="width:8px;height:8px;border-radius:50%;background:${CC[x.ci]};flex-shrink:0"></span>
+<span style="width:75px;font-size:.82rem;flex-shrink:0">${x.l}</span>
+<div style="flex:1;max-width:100px;height:5px;background:var(--s3);border-radius:3px"><div style="width:${pc(x.v,catS)}%;height:100%;background:${CC[x.ci]};border-radius:3px"></div></div>
+<span style="font-weight:700;font-size:.78rem;white-space:nowrap;flex-shrink:0">${pc(x.v,catS)}% · ${fm(x.v)}</span></div>`).join('')}</div></div>
+<div class="c"><div class="ct">🌍 国家占比</div><div class="ss">${Object.entries(cT).sort((a,b)=>b[1]-a[1]).map(([c,v],i)=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0">
+<span style="width:8px;height:8px;border-radius:50%;background:${CCOUNTRY[c]||CC[i]};flex-shrink:0"></span>
+<span style="width:75px;font-size:.82rem;flex-shrink:0">${c}</span>
+<div style="flex:1;max-width:100px;height:5px;background:var(--s3);border-radius:3px"><div style="width:${pc(v,trip)}%;height:100%;background:${CCOUNTRY[c]||CC[i]};border-radius:3px"></div></div>
+<span style="font-weight:700;font-size:.78rem;white-space:nowrap;flex-shrink:0">${pc(v,trip)}% · ${fm(v)}</span></div>`).join('')}</div></div></div>
+
+<div class="c"><div class="ct">📋 每站 Budget 详情</div>
+<div style="overflow-x:auto"><table class="bt"><thead><tr><th>#</th><th>国家</th><th>城市</th><th>天</th><th>交通费</th><th>交通</th><th>食/天</th><th>住/晚</th><th>交通/天</th><th>票/天</th><th>Other</th><th>预估总</th><th>Budget</th><th>差额</th></tr></thead><tbody>`;
+let tbg=0;
+D.stops.forEach((s,i)=>{const cost=cc(s),diff=s.bg-cost;tbg+=s.bg;
+h+=`<tr><td>${i+1}</td><td>${s.co}</td><td>${s.ci}</td><td>${s.days}</td>
+<td><input type="number" value="${s.tc}" onchange="D.stops[${i}].tc=+this.value;sv();R.budget()"></td>
+<td><select style="font-size:.7rem;padding:2px 3px;width:65px" onchange="D.stops[${i}].ts=this.value;sv();R.budget()"><option value="confirmed" ${s.ts==='confirmed'?'selected':''}>✓确认</option><option value="planning" ${s.ts!=='confirmed'?'selected':''}>⏳计划</option></select></td>
+<td><input type="number" value="${s.food}" onchange="D.stops[${i}].food=+this.value;sv();R.budget()"></td>
+<td><input type="number" value="${s.stay}" onchange="D.stops[${i}].stay=+this.value;sv();R.budget()"></td>
+<td><input type="number" value="${s.lt}" onchange="D.stops[${i}].lt=+this.value;sv();R.budget()"></td>
+<td><input type="number" value="${s.tick}" onchange="D.stops[${i}].tick=+this.value;sv();R.budget()"></td>
+<td><input type="number" value="${s.oth||0}" onchange="D.stops[${i}].oth=+this.value;sv();R.budget()"></td>
+<td>${fm(cost)}</td><td><input type="number" value="${s.bg}" onchange="D.stops[${i}].bg=+this.value;sv();R.budget()"></td>
+<td class="${diff<0?'ov':''}">${diff>=0?'+':''}${fm(Math.abs(diff))}${diff<0?' ⚠️':''}</td></tr>`});
+h+=`<tr style="font-weight:700;border-top:2px solid var(--bdr)"><td colspan="11">合计</td><td>${fm(trip)}</td><td>${fm(tbg)}</td><td class="${tbg-trip<0?'ov':''}">${fm(Math.abs(tbg-trip))}</td></tr></tbody></table></div></div>
+
+<div class="c"><div class="ct">🏠 每月固定支出(JB)</div><div class="ss">
+${D.fx.map((f,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--bdr)"><span style="flex:1">${f.n}</span>
+<input type="number" value="${f.v}" style="width:90px;text-align:right" onchange="D.fx[${i}].v=+this.value;sv();R.budget()"></div>`).join('')}
+<div style="display:flex;justify-content:space-between;padding:6px 0;font-weight:700;border-top:2px solid var(--bdr);margin-top:4px"><span>月固定 ${fm(fM)} × ${m}月</span><span>${fm(fxT)}</span></div>
+</div></div>`;
+el.innerHTML=h;
+};
+
+// ============ CHECKLIST ============
+let ckF='all';
+R.checklist=function(){
+const el=document.getElementById('pg-checklist');
+const tdUn=D.td.filter(x=>!x.dn);
+let h=`<h2>✅ Checklist & 代办</h2>`;
+
+// TODO section — drag columns
+const tdDone=D.td.filter(x=>x.dn),tdUndone=D.td.filter(x=>!x.dn);
+h+=`<div class="c"><div class="fb"><div class="ct" style="margin:0">📋 代办事项 <span style="font-size:.72rem;color:var(--t2);font-weight:400">${tdDone.length}/${D.td.length} 完成 · 拖动切换状态</span></div>
+<button class="btn bp bsm" onclick="aT()">+ 添加</button></div>
+<div class="g2" style="margin-top:10px">
+<div id="td-undone" style="min-height:60px;padding:8px;border-radius:10px;background:var(--orgL);border:1px dashed var(--org)" ondragover="event.preventDefault();this.style.background='rgba(200,155,106,.2)'" ondragleave="this.style.background='var(--orgL)'" ondrop="tdDrop(event,false)">
+<div style="font-size:.72rem;font-weight:600;color:var(--org);margin-bottom:6px">⏳ 未完成 (${tdUndone.length})</div>
+${tdUndone.map(t=>`<div class="todo" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${t.id}')">
+<span style="cursor:grab;color:var(--t3)">⠿</span>
+<span style="flex:1">${t.it}</span>
+<button class="bg" onclick="eT(${t.id})">✏️</button>
+<button class="bg" style="color:var(--red)" onclick="D.td=D.td.filter(x=>x.id!==${t.id});sv();R.checklist()">×</button>
+</div>`).join('')}
+</div>
+<div id="td-done" style="min-height:60px;padding:8px;border-radius:10px;background:var(--grnL);border:1px dashed var(--grn)" ondragover="event.preventDefault();this.style.background='rgba(106,171,144,.2)'" ondragleave="this.style.background='var(--grnL)'" ondrop="tdDrop(event,true)">
+<div style="font-size:.72rem;font-weight:600;color:var(--grn);margin-bottom:6px">✅ 已完成 (${tdDone.length})</div>
+${tdDone.map(t=>`<div class="todo done" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${t.id}')">
+<span style="cursor:grab;color:var(--t3)">⠿</span>
+<span style="flex:1;text-decoration:line-through">${t.it}</span>
+<button class="bg" onclick="eT(${t.id})">✏️</button>
+<button class="bg" style="color:var(--red)" onclick="D.td=D.td.filter(x=>x.id!==${t.id});sv();R.checklist()">×</button>
+</div>`).join('')}
+</div></div></div>`;
+
+// Checklist
+const cats=[...new Set(D.ck.map(c=>c.cat))];
+const items=ckF==='all'?D.ck:D.ck.filter(c=>c.cat===ckF);
+const dn=D.ck.filter(c=>c.dn).length;
+h+=`<div class="c"><div class="fb"><div class="ct" style="margin:0">🎒 行前清单 <span style="font-size:.72rem;color:var(--t2);font-weight:400">${dn}/${D.ck.length} (${pc(dn,D.ck.length)}%)</span></div>
+<button class="btn bp bsm" onclick="aCk()">+ 添加</button></div>
+<div style="display:flex;gap:3px;margin:8px 0;flex-wrap:wrap">
+<button class="btn bsm ${ckF==='all'?'bp':'bs'}" onclick="ckF='all';R.checklist()">全部</button>
+${cats.map(c=>`<button class="btn bsm ${ckF===c?'bp':'bs'}" onclick="ckF='${c}';R.checklist()">${c}</button>`).join('')}
+</div>
+<div class="pb" style="margin-bottom:8px"><div class="pf" style="width:${pc(dn,D.ck.length)}%;background:var(--grn)"></div></div>
+<div class="sb">${items.map(c=>`<div class="ck">
+<label><input type="checkbox" ${c.dn?'checked':''} onchange="D.ck.find(x=>x.id===${c.id}).dn=this.checked;sv();R.checklist()">
+<span class="ckt">${c.cat}</span><span style="${c.dn?'text-decoration:line-through;opacity:.4':''}">${c.it}</span></label>
+${c.pr?`<span style="color:var(--t2);font-size:.78rem">${fm(c.pr)}</span>`:''}
+<button class="bg" onclick="eCk(${c.id})">✏️</button>
+<button class="bg" style="color:var(--red)" onclick="D.ck=D.ck.filter(x=>x.id!==${c.id});sv();R.checklist()">×</button>
+</div>`).join('')}</div></div>`;
+
+const undone=[...D.td.filter(x=>!x.dn).map(x=>x.it),...D.ck.filter(x=>!x.dn).slice(0,3).map(x=>x.it)];
+if(undone.length)h+=`<div class="rem">⚠️ 还有 <strong>${D.td.filter(x=>!x.dn).length}</strong> 代办 + <strong>${D.ck.filter(x=>!x.dn).length}</strong> 清单未完成：${undone.slice(0,5).join(' · ')}${undone.length>5?' ...':''}</div>`;
+el.innerHTML=h;
+};
+window.aT=()=>{openM(`<h3>+代办</h3><div class="fr"><label>事项</label><input id="nt-it"></div>
+<div class="ma"><button class="btn bs" onclick="closeM()">取消</button><button class="btn bp" onclick="D.td.push({id:Date.now(),it:document.getElementById('nt-it').value,dn:false});sv();closeM();R.checklist()">添加</button></div>`)};
+window.eT=id=>{const t=D.td.find(x=>x.id===id);
+openM(`<h3>编辑</h3><div class="fr"><label>事项</label><input id="et-it" value="${t.it}"></div>
+<div class="ma"><button class="btn bs" onclick="closeM()">取消</button><button class="btn bp" onclick="D.td.find(x=>x.id===${id}).it=document.getElementById('et-it').value;sv();closeM();R.checklist()">保存</button></div>`)};
+window.tdDrop=(e,done)=>{e.preventDefault();e.currentTarget.style.background=done?'var(--grnL)':'var(--orgL)';const id=+e.dataTransfer.getData('text/plain');const t=D.td.find(x=>x.id===id);if(t){t.dn=done;sv();R.checklist()}};
+window.aCk=()=>{openM(`<h3>+清单</h3>
+<div class="fr"><label>类别</label><select id="nc-cat"><option>Clothes</option><option>Doc</option><option>Others</option><option>Work</option><option>外套</option><option>护肤</option><option>药</option><option>衣服</option><option>裤子</option><option>鞋子</option></select></div>
+<div class="fr"><label>项目</label><input id="nc-it"></div><div class="fr"><label>价格</label><input id="nc-pr" type="number" value="0"></div>
+<div class="ma"><button class="btn bs" onclick="closeM()">取消</button><button class="btn bp" onclick="D.ck.push({id:Date.now(),cat:document.getElementById('nc-cat').value,it:document.getElementById('nc-it').value,pr:+document.getElementById('nc-pr').value,dn:false});sv();closeM();R.checklist()">添加</button></div>`)};
+window.eCk=id=>{const c=D.ck.find(x=>x.id===id);
+openM(`<h3>编辑</h3><div class="fr"><label>类别</label><input id="ec-cat" value="${c.cat}"></div><div class="fr"><label>项目</label><input id="ec-it" value="${c.it}"></div><div class="fr"><label>价格</label><input id="ec-pr" type="number" value="${c.pr}"></div>
+<div class="ma"><button class="btn bs" onclick="closeM()">取消</button><button class="btn bp" onclick="const c=D.ck.find(x=>x.id===${id});c.cat=document.getElementById('ec-cat').value;c.it=document.getElementById('ec-it').value;c.pr=+document.getElementById('ec-pr').value;sv();closeM();R.checklist()">保存</button></div>`)};
+
+// ============ NOTES ============
+R.notes=function(){
+const el=document.getElementById('pg-notes');
+const sorted=[...D.nt].sort((a,b)=>(b.pin?1:0)-(a.pin?1:0));
+let h=`<div class="fb" style="margin-bottom:14px"><h2 style="margin:0">📝 备註</h2><button class="btn bp" onclick="aN()">+ 新备註</button></div><div class="g2">`;
+sorted.forEach(n=>{h+=`<div class="c nc" style="border-left-color:${CC[n.id%CC.length]}">
+<div class="fb"><div style="font-weight:600">${n.pin?'📌 ':''}${n.t}</div>
+<div><button class="bg" onclick="eN(${n.id})">✏️</button><button class="bg" style="color:var(--red)" onclick="D.nt=D.nt.filter(x=>x.id!==${n.id});sv();R.notes()">×</button></div></div>
+<div class="ss" style="font-size:.82rem;color:var(--t2);white-space:pre-line;margin-top:4px">${n.c}</div></div>`});
+h+='</div>';el.innerHTML=h;
+};
+window.aN=()=>{openM(`<h3>+备註</h3><div class="fr"><label>标题</label><input id="nn-t"></div><div class="fr"><label>内容</label><textarea id="nn-c" rows="4"></textarea></div>
+<div class="ma"><button class="btn bs" onclick="closeM()">取消</button><button class="btn bp" onclick="D.nt.push({id:Date.now(),t:document.getElementById('nn-t').value||'备註',c:document.getElementById('nn-c').value,pin:false});sv();closeM();R.notes()">保存</button></div>`)};
+window.eN=id=>{const n=D.nt.find(x=>x.id===id);
+openM(`<h3>编辑</h3><div class="fr"><label>标题</label><input id="en-t" value="${n.t}"></div><div class="fr"><label>内容</label><textarea id="en-c" rows="4">${n.c}</textarea></div>
+<div class="fr"><label>置顶</label><select id="en-p"><option value="0" ${!n.pin?'selected':''}>否</option><option value="1" ${n.pin?'selected':''}>是</option></select></div>
+<div class="ma"><button class="btn bs" onclick="closeM()">取消</button><button class="btn bp" onclick="const n=D.nt.find(x=>x.id===${id});n.t=document.getElementById('en-t').value;n.c=document.getElementById('en-c').value;n.pin=document.getElementById('en-p').value==='1';sv();closeM();R.notes()">保存</button></div>`)};
+
+// ============ SUGGESTIONS ============
+R.suggestions=function(){
+const el=document.getElementById('pg-suggestions');
+const sd=schD(),all=tAll(),avail=D.sav+D.mi*mo();
+const unc=D.stops.filter(s=>s.st!=='confirmed'),noStay=D.stops.filter(s=>s.stay===0&&s.days>1&&s.co!=='Malaysia');
+const overB=D.stops.filter(s=>cc(s)>s.bg&&s.bg>0);
+const tdUn=D.td.filter(x=>!x.dn);
+let cards=[];
+if(all>D.bgt)cards.push({ico:'💸',tit:'超出Budget',col:'var(--red)',body:`预估 ${fm(all)} 超出 ${fm(D.bgt)} 共 <strong>${fm(all-D.bgt)}</strong>`});
+if(all>avail)cards.push({ico:'⚠️',tit:`资金缺口 ${fm(all-avail)}`,col:'var(--red)',body:`需月入 ${fm(Math.ceil((all-D.sav)/mo()))}`});
+cards.push({ico:'🛂',tit:'申根',col:sd>80?'var(--red)':sd>60?'var(--org)':'var(--blu)',body:`累计 <strong>${sd}/90天</strong> 余${90-sd}天 ${sd>80?'⚠️接近上限！':''}`});
+if(unc.length)cards.push({ico:'❓',tit:`${unc.length}站未确认`,col:'var(--org)',body:unc.slice(0,6).map(s=>`• ${s.co}→${s.ci}`).join('<br>')+(unc.length>6?`<br>...+${unc.length-6}站`:'')});
+if(overB.length)cards.push({ico:'💸',tit:`${overB.length}站超预算`,col:'var(--red)',body:overB.map(s=>`• ${s.ci}: ${fm(cc(s))}>${fm(s.bg)}`).join('<br>')});
+if(noStay.length)cards.push({ico:'🏠',tit:'住宿=0',col:'var(--org)',body:noStay.map(s=>s.ci).join(', ')});
+if(tdUn.length)cards.push({ico:'📋',tit:`${tdUn.length}个代办`,col:'var(--org)',body:tdUn.slice(0,5).map(t=>'• '+t.it).join('<br>')});
+cards.push({ico:'🛂',tit:'签证提醒',col:'var(--blu)',body:'Nepal:落地签50USD<br>India:eVisa 25USD<br>KZ:免签30天<br>Georgia:免签1年<br>Serbia/Bosnia/MNE:免签30天<br>申根区:需签证'});
+cards.push({ico:'💡',tit:'省钱Tips',col:'var(--grn)',body:'Austria日均高→HelpX/Workaway<br>自煮省50%<br>FlixBus代替短途航班<br>Couchsurfing东欧活跃<br>SafetyWing≈RM180/月'});
+cards.push({ico:'🔒',tit:'安全提醒',col:'var(--red)',body:'欧洲火车：看好行李，扒手多<br>巴尔干：避免政治话题<br>Nepal：高反注意，慢慢适应<br>Kazakhstan冬季：-30°C可能<br>Georgia：野狗多，保持距离'});
+cards.push({ico:'🚂',tit:'交通Tips',col:'var(--blu)',body:'Omio/FlixBus比较价格<br>巴尔干bus常误点，留buffer<br>欧洲火车提前买Saver票<br>Georgia: Bolt打车超便宜<br>Nepal: Tourist Bus预留cushion'});
+// Transport cost discrepancy check
+const tcCheck=[
+  {i:13,ci:'Timișoara',est:90,note:'Brașov→Timișoara巴士~RM90'},
+  {i:14,ci:'Belgrade',est:250,note:'Timișoara→Belgrade巴士~RM250'},
+  {i:21,ci:'Salzburg',est:50,note:'Hallstatt→Salzburg火车~RM50'},
+  {i:24,ci:'Granada',est:45,note:'Madrid→Granada ALSA巴士~RM45'}
+];
+let tcWarn=tcCheck.filter(t=>D.stops[t.i-1]&&Math.abs(D.stops[t.i-1].tc-t.est)>50).map(t=>`• ${t.ci}: 当前${fm(D.stops[t.i-1].tc)} vs 参考${fm(t.est)}`);
+if(tcWarn.length)cards.push({ico:'🔍',tit:'交通费差异',col:'var(--org)',body:'以下站交通费和参考价差距大：<br>'+tcWarn.join('<br>')+'<br><em style="font-size:.72rem">→ 可点行程tab编辑调整</em>'});
+cards.push({ico:'🍽️',tit:'饮食建议',col:'var(--grn)',body:'中亚/高加索：自煮省一半<br>巴尔干：当地餐厅便宜<br>西欧：超市+自煮为主<br>Nepal：Dal Bhat性价比之王<br>Georgia：Khinkali必吃'});
+cards.push({ico:'📱',tit:'必备准备',col:'var(--org)',body:'Airalo/eSIM比当地卡方便<br>VPN备好(部分国家需要)<br>Google Maps离线地图下好<br>Wise卡多币种免手续费<br>紧急联系人清单备份'});
+let h=`<h2>💡 建议 & 提醒</h2><div class="g3">`;
+cards.forEach(c=>{h+=`<div class="c" style="border-top:3px solid ${c.col}">
+<div style="font-size:1.2rem;margin-bottom:4px">${c.ico}</div>
+<div style="font-weight:700;font-size:.85rem;color:${c.col};margin-bottom:6px">${c.tit}</div>
+<div style="font-size:.82rem;color:var(--t2);line-height:1.6">${c.body}</div>
+</div>`});
+h+=`</div>`;
+el.innerHTML=h;
+};
+
+// ============ GOALS ============
+R.goals=function(){
+const el=document.getElementById('pg-goals');
+const months=['2026-04','2026-05','2026-06','2026-07','2026-08','2026-09','2026-10','2026-11','2026-12'];
+const mNames=['Apr 2026','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const curM=new Date().toISOString().slice(0,7);
+if(!D.glm)D.glm={};
+
+let h=`<h2>🎯 行前每月目标 <span style="font-size:.75rem;color:var(--t2);font-weight:400">大目标→小目标→每日习惯 · 全部可编辑</span></h2>`;
+
+// Big goals overview
+h+=`<div class="g3" style="margin-bottom:16px">`;
+D.gl.forEach((g,gi)=>{
+  const done=g.subs.filter(s=>s.done).length;
+  const total=g.subs.length;
+  const pct=total?Math.round(done/total*100):0;
+  h+=`<div class="c" style="border-top:3px solid ${CC[gi%CC.length]}">
+    <div class="fb"><div class="ct" style="margin:0">${g.cat}</div>
+    <button class="bg" onclick="editGoal(${gi})">✏️</button></div>
+    <div style="font-size:1.1rem;font-weight:700;margin:6px 0">${g.big}</div>
+    <div class="pb" style="margin:6px 0"><div class="pf" style="width:${pct}%;background:${CC[gi%CC.length]}"></div></div>
+    <div style="font-size:.75rem;color:var(--t2)">${done}/${total} 小目标完成</div>`;
+  g.subs.forEach((s,si)=>{h+=`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:.82rem">
+      <input type="checkbox" style="width:14px;height:14px;accent-color:${CC[gi%CC.length]}" ${s.done?'checked':''} onchange="D.gl[${gi}].subs[${si}].done=this.checked;sv();R.goals()">
+      <span style="${s.done?'text-decoration:line-through;opacity:.4':''};flex:1">${s.n}</span>
+      ${s.dl?`<span style="font-size:.68rem;color:${!s.done&&new Date(s.dl)<new Date()?'var(--red)':'var(--t2)'}">${s.dl}${!s.done&&new Date(s.dl)<new Date()?' ⚠️':''}</span>`:''}
+      <input type="range" min="0" max="100" value="${s.prog}" style="width:50px;accent-color:${CC[gi%CC.length]}" onchange="D.gl[${gi}].subs[${si}].prog=+this.value;sv();R.goals()">
+      <span style="font-size:.7rem;color:var(--t2);width:28px">${s.prog}%</span>
+      <button class="bg" style="font-size:.6rem" onclick="editSub(${gi},${si})">✏️</button>
+    </div>`});
+  h+=`<div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--bdr)">
+      <div style="font-size:.72rem;color:var(--t2);font-weight:600;margin-bottom:4px">📋 每日习惯</div>`;
+  g.daily.forEach((d,di)=>{h+=`<div style="font-size:.8rem;padding:2px 0;color:var(--t2)">• ${d} <button class="bg" style="font-size:.6rem" onclick="editDaily(${gi},${di})">✏️</button></div>`});
+  h+=`</div>
+    <button class="btn bs bsm" style="margin-top:6px" onclick="addSub(${gi})">+ 小目标</button>
+    <button class="btn bs bsm" style="margin-top:6px" onclick="addDaily(${gi})">+ 每日</button>
+  </div>`;
+});
+h+=`<div class="c" style="display:flex;align-items:center;justify-content:center;min-height:120px;cursor:pointer;border:2px dashed var(--bdr)" onclick="addGoal()">
+  <div style="text-align:center;color:var(--t2)"><div style="font-size:1.5rem">+</div><div style="font-size:.82rem">添加大目标</div></div>
+</div></div>`;
+
+// Monthly check-in
+h+=`<div class="c"><div class="ct">📅 每月进度记录</div>
+<div style="overflow-x:auto"><table class="bt"><thead><tr><th>目标</th>`;
+months.forEach((m,i)=>{h+=`<th style="text-align:center;${m===curM?'background:var(--accL);color:var(--acc2)':''}">` + mNames[i] + `</th>`});
+h+=`</tr></thead><tbody>`;
+D.gl.forEach((g,gi)=>{
+  h+=`<tr><td style="font-weight:600">${g.cat} ${g.big}</td>`;
+  months.forEach(m=>{
+    const key=gi+'_'+m;
+    const v=D.glm[key]||0;
+    const checked=v>=100;
+    h+=`<td style="text-align:center;${m===curM?'background:var(--accL)':''}">
+      <div style="cursor:pointer" onclick="cycleGlm('${key}')">
+        ` + (checked?'✅':v>0?`<span style="color:var(--org);font-weight:700">${v}%</span>`:'⬜') + `
+      </div></td>`;
+  });
+  h+=`</tr>`;
+});
+h+=`</tbody></table></div></div>`;
+
+el.innerHTML=h;
+};
+
+window.cycleGlm=key=>{const v=D.glm[key]||0;D.glm[key]=v>=100?0:v<50?50:v<80?80:100;sv();R.goals()};
+window.editSub=(gi,si)=>{const s=D.gl[gi].subs[si];openM(`<h3>编辑小目标</h3>
+<div class="fr"><label>内容</label><input id="sn" value="${s.n}"></div>
+<div class="fr"><label>完成期限</label><input id="sdl" type="date" value="${s.dl||''}"></div>
+<div class="ma"><button class="btn bs" onclick="closeM()">取消</button>
+<button class="btn bd" onclick="D.gl[${gi}].subs.splice(${si},1);sv();closeM();R.goals()">删除</button>
+<button class="btn bp" onclick="D.gl[${gi}].subs[${si}].n=document.getElementById('sn').value;D.gl[${gi}].subs[${si}].dl=document.getElementById('sdl').value;sv();closeM();R.goals()">保存</button></div>`)};
+window.addGoal=()=>{openM(`<h3>+ 大目标</h3>
+<div class="fr"><label>类别(带emoji)</label><input id="gc" value="🎯 新目标"></div>
+<div class="fr"><label>大目标</label><input id="gb"></div>
+<div class="ma"><button class="btn bs" onclick="closeM()">取消</button>
+<button class="btn bp" onclick="D.gl.push({id:Date.now(),cat:document.getElementById('gc').value,big:document.getElementById('gb').value,subs:[],daily:[]});sv();closeM();R.goals()">添加</button></div>`)};
+window.editGoal=(gi)=>{const g=D.gl[gi];openM(`<h3>编辑目标</h3>
+<div class="fr"><label>类别</label><input id="gc" value="${g.cat}"></div>
+<div class="fr"><label>大目标</label><input id="gb" value="${g.big}"></div>
+<div class="ma"><button class="btn bs" onclick="closeM()">取消</button>
+<button class="btn bd" onclick="D.gl.splice(${gi},1);sv();closeM();R.goals()">删除</button>
+<button class="btn bp" onclick="D.gl[${gi}].cat=document.getElementById('gc').value;D.gl[${gi}].big=document.getElementById('gb').value;sv();closeM();R.goals()">保存</button></div>`)};
+window.addSub=(gi)=>{openM(`<h3>+ 小目标</h3><div class="fr"><label>内容</label><input id="sn"></div>
+<div class="fr"><label>完成期限(可选)</label><input id="sdl" type="date"></div>
+<div class="ma"><button class="btn bs" onclick="closeM()">取消</button>
+<button class="btn bp" onclick="D.gl[${gi}].subs.push({n:document.getElementById('sn').value,done:false,prog:0,dl:document.getElementById('sdl').value});sv();closeM();R.goals()">添加</button></div>`)};
+window.addDaily=(gi)=>{openM(`<h3>+ 每日习惯</h3><div class="fr"><label>内容</label><input id="dn"></div>
+<div class="ma"><button class="btn bs" onclick="closeM()">取消</button>
+<button class="btn bp" onclick="D.gl[${gi}].daily.push(document.getElementById('dn').value);sv();closeM();R.goals()">添加</button></div>`)};
+window.editDaily=(gi,di)=>{openM(`<h3>编辑每日习惯</h3><div class="fr"><label>内容</label><input id="dn" value="${D.gl[gi].daily[di]}"></div>
+<div class="ma"><button class="btn bs" onclick="closeM()">取消</button>
+<button class="btn bd" onclick="D.gl[${gi}].daily.splice(${di},1);sv();closeM();R.goals()">删除</button>
+<button class="btn bp" onclick="D.gl[${gi}].daily[${di}]=document.getElementById('dn').value;sv();closeM();R.goals()">保存</button></div>`)};
+
+// ============ CURRENCY ============
+R.currency=function(){
+const el=document.getElementById('pg-currency');
+const rates={'MYR':1,'NPR':28.5,'INR':19.5,'KZT':103,'KGS':19.1,'GEL':0.58,'AMD':85,'BGN':0.39,'RON':1.02,'RSD':23.5,'EUR':0.21,'BAM':0.39,'TRY':8.3,'USD':0.23,'GBP':0.17};
+const cNames={'MYR':'🇲🇾 马来西亚 Ringgit','NPR':'🇳🇵 尼泊尔 Rupee','INR':'🇮🇳 印度 Rupee','KZT':'🇰🇿 哈萨克 Tenge','KGS':'🇰🇬 吉尔吉斯 Som','GEL':'🇬🇪 格鲁吉亚 Lari','AMD':'🇦🇲 亚美尼亚 Dram','BGN':'🇧🇬 保加利亚 Lev','RON':'🇷🇴 罗马尼亚 Leu','RSD':'🇷🇸 塞尔维亚 Dinar','EUR':'🇪🇺 欧元','BAM':'🇧🇦 波黑 Mark','TRY':'🇹🇷 土耳其 Lira','USD':'🇺🇸 美元','GBP':'🇬🇧 英镑'};
+const coMap={'Nepal':'NPR','India':'INR','Kazakhstan':'KZT','Kyrgyzstan':'KGS','Georgia':'GEL','Armenia':'AMD','Bulgaria':'BGN','Romania':'RON','Serbia':'RSD','Montenegro':'EUR','Bosnia':'BAM','Slovenia':'EUR','Austria':'EUR','Spain':'EUR','Portugal':'EUR'};
+const tripCur=[...new Set(D.stops.map(s=>coMap[s.co]).filter(Boolean))];
+
+let h=`<h2>💱 汇率转换器 <span style="font-size:.72rem;color:var(--t2);font-weight:400">参考汇率 · 出发前请更新</span></h2>`;
+
+const opts=Object.keys(rates).map(c=>'<option value="'+c+'">'+c+'</option>').join('');
+h+=`<div class="c"><div class="ct">🔄 汇率换算</div>
+<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+<div style="flex:1;min-width:180px">
+  <div class="fr"><label>货币</label><select id="cx-from" onchange="cxCalc('L')">${opts}</select></div>
+  <div class="fr" style="margin-top:6px"><label>金额</label><input type="number" id="cx-left" value="100" oninput="cxCalc('L')" style="font-size:1.2rem;font-weight:700;text-align:right"></div>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+  <button class="btn bs bsm" onclick="const l=document.getElementById('cx-from'),r=document.getElementById('cx-to');const t=l.value;l.value=r.value;r.value=t;cxCalc('L')" style="font-size:1rem;padding:6px 10px">⇄</button>
+  <div id="cx-rate" style="font-size:.72rem;color:var(--t2);text-align:center;min-width:80px"></div>
+</div>
+<div style="flex:1;min-width:180px">
+  <div class="fr"><label>货币</label><select id="cx-to" onchange="cxCalc('L')">${opts.replace('value="EUR"','value="EUR" selected')}</select></div>
+  <div class="fr" style="margin-top:6px"><label>金额</label><input type="number" id="cx-right" value="" oninput="cxCalc('R')" style="font-size:1.2rem;font-weight:700;text-align:right"></div>
+</div>
+</div></div>`;
+
+h+=`<div class="c"><div class="ct">📊 RM100 = 各国多少？</div>
+<div class="g3">`;
+tripCur.forEach(cur=>{
+  const r=rates[cur]||1;
+  h+=`<div style="padding:10px;background:var(--s2);border-radius:10px;text-align:center">
+  <div style="font-size:.75rem;color:var(--t2)">${cNames[cur]||cur}</div>
+  <div style="font-size:1.3rem;font-weight:800;color:var(--acc);margin:4px 0">${(100*r).toFixed(cur==='EUR'||cur==='GBP'||cur==='GEL'?2:0)}</div>
+  <div style="font-size:.7rem;color:var(--t2)">RM1 = ${r} ${cur}</div></div>`;
+});
+h+=`</div></div>`;
+
+h+=`<div class="c"><div class="ct">🗺️ 每站当地货币参考</div>
+<div style="overflow-x:auto"><table class="bt"><thead><tr><th>站</th><th>国家</th><th>城市</th><th>天</th><th>货币</th><th>日均RM</th><th>日均当地</th><th>总RM</th><th>总当地</th></tr></thead><tbody>`;
+D.stops.forEach((s,i)=>{
+  if(s.co==='Malaysia')return;
+  const cur=coMap[s.co]||'EUR';
+  const r=rates[cur]||1;
+  const daily=s.days?(cc(s)/s.days):0;
+  const total=cc(s);
+  h+=`<tr><td>${i+1}</td><td>${s.co}</td><td>${s.ci}</td><td>${s.days}</td><td>${cur}</td><td>${fm(Math.round(daily))}</td><td>${(daily*r).toFixed(0)} ${cur}</td><td>${fm(total)}</td><td>${(total*r).toFixed(0)} ${cur}</td></tr>`;
+});
+h+=`</tbody></table></div></div>`;
+
+h+=`<div class="rem">⚠️ 汇率仅供参考，实际汇率以Wise/银行为准。建议出发前更新。</div>`;
+
+el.innerHTML=h;
+
+setTimeout(cxCalc,10);
+};
+window.cxCalc=(side)=>{
+const rates={'MYR':1,'NPR':28.5,'INR':19.5,'KZT':103,'KGS':19.1,'GEL':0.58,'AMD':85,'BGN':0.39,'RON':1.02,'RSD':23.5,'EUR':0.21,'BAM':0.39,'TRY':8.3,'USD':0.23,'GBP':0.17};
+const fromC=document.getElementById('cx-from')?.value||'MYR';
+const toC=document.getElementById('cx-to')?.value||'EUR';
+const lEl=document.getElementById('cx-left');
+const rEl=document.getElementById('cx-right');
+const rateEl=document.getElementById('cx-rate');
+if(!lEl||!rEl)return;
+const fR=rates[fromC]||1,tR=rates[toC]||1;
+const xRate=tR/fR;
+if(side==='R'){const rv=+(rEl.value||0);lEl.value=xRate?+(rv/xRate).toFixed(4):0}
+else{const lv=+(lEl.value||0);rEl.value=+(lv*xRate).toFixed(4)}
+if(rateEl)rateEl.innerHTML='1 '+fromC+' = '+(xRate).toFixed(4)+' '+toC+'<br>1 '+toC+' = '+(1/xRate).toFixed(4)+' '+fromC;
+};
+
+// ============ EXPORT / IMPORT ============
+window.exportData=()=>{
+  sv();
+  const blob=new Blob([JSON.stringify(D,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='ez-trip-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();URL.revokeObjectURL(a.href);
+};
+window.importData=()=>{
+  const inp=document.createElement('input');inp.type='file';inp.accept='.json';
+  inp.onchange=e=>{
+    const f=e.target.files[0];if(!f)return;
+    const rd=new FileReader();
+    rd.onload=ev=>{
+      try{
+        const nd=JSON.parse(ev.target.result);
+        if(!nd.stops||!Array.isArray(nd.stops)){alert('❌ 文件格式不对');return}
+        if(!confirm('⚠️ 确定要导入吗？当前数据会被覆盖。'))return;
+        D=nd;sv();R.dashboard();alert('✅ 导入成功！');
+      }catch(err){alert('❌ JSON解析失败: '+err.message)}
+    };rd.readAsText(f);
+  };inp.click();
+};
+
+ld();R.dashboard();
+window.addEventListener('beforeunload',sv);
+</script>
+</body>
+</html>
