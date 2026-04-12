@@ -406,7 +406,13 @@ ${tdUndone.length?tdUndone.map(t=>`<div style="display:flex;align-items:center;g
 
 // Render widgets in saved order
 let html=`<div class="fb" style="margin-bottom:4px"><h2 style="margin:0">📊 Dashboard <span style="font-size:.72rem;color:var(--t2);font-weight:400">拖动 ⠿ 调整位置</span></h2>
-<div style="display:flex;gap:6px"><button class="btn bs bsm" onclick="exportData()">💾 导出备份</button><button class="btn bs bsm" onclick="importData()">📂 导入</button></div></div><div id="dboard">`;
+<div style="display:flex;gap:6px;flex-wrap:wrap">
+<button class="btn bp bsm" onclick="syncUp()" title="上传到GitHub Gist">☁️ 上传</button>
+<button class="btn bs bsm" onclick="syncDown()" title="从GitHub Gist下载">☁️ 下载</button>
+<button class="btn bs bsm" onclick="syncSetup()" title="设置Token和Gist ID">⚙️</button>
+<button class="btn bs bsm" onclick="exportData()">💾 导出</button>
+<button class="btn bs bsm" onclick="importData()">📂 导入</button>
+</div></div><div id="dboard">`;
 dwo.forEach(wid=>{html+=(W[wid]||'')});
 html+=`</div>`;
 el.innerHTML=html;
@@ -952,6 +958,70 @@ window.importData=()=>{
       }catch(err){alert('❌ JSON解析失败: '+err.message)}
     };rd.readAsText(f);
   };inp.click();
+};
+
+// ============ GIST SYNC ============
+const SYNC_TOKEN_KEY='ez_trip_gh_token';
+const SYNC_GIST_KEY='ez_trip_gist_id';
+function getToken(){return localStorage.getItem(SYNC_TOKEN_KEY)||''}
+function getGistId(){return localStorage.getItem(SYNC_GIST_KEY)||''}
+function setToken(t){localStorage.setItem(SYNC_TOKEN_KEY,t)}
+function setGistId(id){localStorage.setItem(SYNC_GIST_KEY,id)}
+
+window.syncSetup=()=>{
+  const curT=getToken();const curG=getGistId();
+  openM(`<h3>☁️ 云端同步设置</h3>
+  <div class="fr"><label>GitHub Token <span style="font-weight:400;color:var(--t2)">(只需gist权限)</span></label>
+  <input id="sync-token" type="password" value="${curT}" placeholder="ghp_xxxxxxxxx"></div>
+  <div class="fr"><label>Gist ID <span style="font-weight:400;color:var(--t2)">(留空=自动创建新的)</span></label>
+  <input id="sync-gist" value="${curG}" placeholder="自动生成"></div>
+  <div style="font-size:.75rem;color:var(--t2);margin:8px 0;line-height:1.5">
+  Token只存在你这台设备的浏览器里，不会上传。<br>每台新设备只需设置一次。</div>
+  <div class="ma">
+  <button class="btn bs" onclick="closeM()">取消</button>
+  <button class="btn bp" onclick="saveSync()">保存</button></div>`);
+};
+window.saveSync=()=>{
+  const t=document.getElementById('sync-token').value.trim();
+  const g=document.getElementById('sync-gist').value.trim();
+  if(!t){alert('请输入Token');return}
+  setToken(t);if(g)setGistId(g);
+  closeM();alert('✅ 已保存！现在可以点 ☁️上传 或 ☁️下载 同步数据');
+};
+
+window.syncUp=async()=>{
+  const token=getToken();if(!token){syncSetup();return}
+  sv();
+  const body={description:'EZ Trip Planner Sync',public:false,files:{'ez-trip-data.json':{content:JSON.stringify(D,null,2)}}};
+  const gistId=getGistId();
+  try{
+    const url=gistId?'https://api.github.com/gists/'+gistId:'https://api.github.com/gists';
+    const method=gistId?'PATCH':'POST';
+    const res=await fetch(url,{method,headers:{'Authorization':'token '+token,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},body:JSON.stringify(body)});
+    if(!res.ok){const e=await res.text();alert('❌ 上传失败: '+res.status+' '+e.slice(0,200));return}
+    const data=await res.json();
+    if(!gistId&&data.id){setGistId(data.id)}
+    alert('✅ 已同步到云端！'+(gistId?'':'\\nGist ID: '+data.id+'\\n其他设备设置时填入这个ID'));
+  }catch(err){alert('❌ 网络错误: '+err.message)}
+};
+
+window.syncDown=async()=>{
+  const token=getToken();const gistId=getGistId();
+  if(!token||!gistId){syncSetup();return}
+  try{
+    const res=await fetch('https://api.github.com/gists/'+gistId,{headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json'}});
+    if(!res.ok){alert('❌ 下载失败: '+res.status);return}
+    const data=await res.json();
+    const content=data.files?.['ez-trip-data.json']?.content;
+    if(!content){alert('❌ Gist里没有数据');return}
+    const nd=JSON.parse(content);
+    if(!nd.stops||!Array.isArray(nd.stops)){alert('❌ 数据格式不对');return}
+    if(!confirm('⚠️ 确定要用云端数据覆盖本地？')){return}
+    D=nd;sv();
+    const curPage=document.querySelector('.nt.on')?.dataset?.p||'dashboard';
+    R[curPage]();
+    alert('✅ 已从云端同步到本地！');
+  }catch(err){alert('❌ 错误: '+err.message)}
 };
 
 ld();R.dashboard();
