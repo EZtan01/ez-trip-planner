@@ -1118,8 +1118,8 @@ async function autoDown(notify){
   const remote=await _silentDown();
   if(!remote)return;
   const rTs=remote.__ts||0,lTs=D.__ts||0;
-  if(rTs<=lTs)return;
-  if(rTs<=_lastDown)return;
+  if(rTs<lTs)return;
+  if(rTs===_lastDown&&rTs!==0)return;
   D=remote;
   localStorage.setItem(SK,JSON.stringify(D));
   _lastDown=rTs;
@@ -1136,27 +1136,31 @@ async function autoDown(notify){
 window.forcSync=async function(){
   if(!getToken()||!getGistId()){syncSetup();return}
   setSS('syncing');
-  // Pull first to detect remote changes, then push if local newer
   const remote=await _silentDown();
-  const rTs=(remote&&remote.__ts)||0,lTs=D.__ts||0;
-  if(rTs>lTs){
-    D=remote;localStorage.setItem(SK,JSON.stringify(D));_lastDown=rTs;
-    const curN=document.querySelector('.nt.on');
-    const curPage=(curN&&curN.dataset&&curN.dataset.p)||'dashboard';
-    if(R[curPage])R[curPage]();
-    setSS('synced');
-    tToast('☁️ 已从云端同步');
-  }else{
-    const ok=await _silentUp();
-    setSS(ok?'synced':'error');
-    if(ok)tToast('☁️ 已上传到云端');
-  }
+  if(!remote){setSS('error');tToast('❌ 云端获取失败');return}
+  D=remote;
+  localStorage.setItem(SK,JSON.stringify(D));
+  _lastDown=remote.__ts||Date.now();
+  const curN=document.querySelector('.nt.on');
+  const curPage=(curN&&curN.dataset&&curN.dataset.p)||'dashboard';
+  if(R[curPage])R[curPage]();
+  setSS('synced');
+  tToast('☁️ 已从云端拉取最新');
 };
 
 async function initSync(){
   if(!getToken()||!getGistId()){setSS('idle');return}
   setSS('syncing');
-  await autoDown(false);
+  // Force initial pull from Gist as source of truth (ignore timestamps on first load)
+  const remote=await _silentDown();
+  if(remote){
+    D=remote;
+    localStorage.setItem(SK,JSON.stringify(D));
+    _lastDown=remote.__ts||Date.now();
+    const curN=document.querySelector('.nt.on');
+    const curPage=(curN&&curN.dataset&&curN.dataset.p)||'dashboard';
+    if(R[curPage])R[curPage]();
+  }
   setSS('synced');
   if(_polling)clearInterval(_polling);
   _polling=setInterval(()=>autoDown(true),_SYNC_POLL);
