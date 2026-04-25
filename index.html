@@ -2,8 +2,15 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover">
 <title>EZ 环游世界梦 — Travel Planner v4</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#c87b62">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="EZ Trip">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -169,13 +176,14 @@ const CDB={'Nepal':['Kathmandu','Pokhara','Bandipur','Nagarkot','Chitwan'],'Indi
 'Croatia':['Dubrovnik','Split','Zagreb'],'Albania':['Tirana','Berat'],'Austria':['Vienna','Salzburg','Hallstatt'],
 'Hungary':['Budapest'],'Other':[]};
 const REG=[{n:'🏔️ 南亚',c:['Nepal','India']},{n:'🐴 中亚',c:['Kazakhstan','Kyrgyzstan']},
-{n:'🍷 高加索',c:['Georgia','Armenia']},{n:'🏰 巴尔干',c:['Bulgaria','Romania','Serbia','Montenegro','Bosnia']},
-{n:'⛰️ 中欧',c:['Slovenia','Poland','Czech Republic']},{n:'☀️ 西欧',c:['Spain','Portugal']},{n:'🏠 回家',c:['Malaysia']}];
+{n:'🍷 高加索',c:['Georgia','Armenia']},{n:'🏰 巴尔干',c:['Bulgaria','Romania','Serbia','Montenegro','Bosnia','Croatia']},
+{n:'⛰️ 中欧',c:['Slovenia','Poland','Czech Republic','Austria']},{n:'☀️ 西欧',c:['Spain','Portugal']},{n:'🏠 回家',c:['Malaysia']}];
 const CC=['#c87b62','#6aab90','#6a96b5','#a08abf','#b56a52','#b8a07a','#6ab5ae','#b56a8f','#7aab6a','#b59f6a','#6a6ab5','#b5916a','#6aab7a','#b56a6a','#8fb56a','#c9a070'];
 const CCOUNTRY={'Nepal':'#c87b62','India':'#d4a07a','Kazakhstan':'#6a96b5','Kyrgyzstan':'#7aabc8',
 'Georgia':'#a08abf','Armenia':'#bf8aaa','Bulgaria':'#6aab90','Romania':'#7ab56a',
 'Serbia':'#b5916a','Montenegro':'#6ab5ae','Bosnia':'#b8a07a','Slovenia':'#8fb56a',
-'Poland':'#c9a070','Czech Republic':'#d4956a','Latvia':'#7a8fbf','Spain':'#c87b62','Portugal':'#6a96b5','Malaysia':'#b56a52'};
+'Poland':'#c9a070','Czech Republic':'#d4956a','Austria':'#9a8aa5','Croatia':'#6aaba8','Latvia':'#7a8fbf','Spain':'#c87b62','Portugal':'#6a96b5','Malaysia':'#b56a52'};
+const CTEMP={'Kathmandu':[[19,2],[22,4],[27,8],[29,12],[30,16],[30,20],[29,20],[29,20],[28,19],[27,14],[24,8],[20,3]],'Pokhara':[[20,8],[22,10],[27,13],[31,17],[31,20],[30,22],[29,22],[29,22],[29,21],[28,17],[25,12],[21,8]],'New Delhi':[[21,8],[24,11],[30,15],[36,22],[39,27],[39,29],[35,27],[33,26],[34,24],[33,19],[28,13],[23,9]],'Almaty':[[-1,-9],[1,-7],[8,-1],[17,6],[22,11],[27,15],[29,17],[29,16],[23,11],[14,4],[6,-2],[1,-7]],'Karakol':[[-2,-13],[0,-12],[6,-5],[14,2],[18,7],[22,11],[24,13],[23,12],[19,7],[12,2],[4,-5],[-1,-10]],'Tbilisi':[[7,-1],[8,0],[13,4],[19,8],[24,13],[28,17],[31,20],[31,20],[26,15],[19,10],[12,4],[8,0]],'Mestia':[[1,-7],[3,-7],[7,-3],[13,2],[18,7],[22,11],[24,13],[25,13],[21,9],[15,4],[8,-1],[3,-5]],'Yerevan':[[2,-7],[6,-5],[12,0],[19,6],[24,11],[30,15],[34,19],[34,19],[29,13],[21,7],[11,1],[4,-4]],'Sofia':[[3,-4],[6,-3],[11,0],[17,5],[21,9],[25,13],[28,15],[28,15],[24,11],[17,6],[9,2],[4,-2]],'Plovdiv':[[5,-3],[9,-1],[14,3],[20,7],[26,12],[29,16],[32,18],[32,18],[27,13],[20,8],[12,3],[6,-1]],'Bucharest':[[2,-6],[4,-4],[11,0],[18,5],[24,11],[28,14],[30,16],[30,16],[25,12],[18,6],[9,1],[3,-3]],'Brașov':[[0,-9],[2,-8],[8,-3],[14,2],[19,7],[22,10],[24,12],[24,12],[20,8],[14,3],[6,-2],[1,-6]],'Sibiu':[[1,-7],[3,-6],[9,-2],[15,3],[20,8],[23,11],[25,13],[25,13],[21,9],[15,4],[7,0],[2,-4]],'Timișoara':[[3,-4],[6,-2],[12,2],[18,7],[23,12],[26,15],[29,17],[28,17],[24,13],[18,8],[9,3],[4,-1]],'Belgrade':[[4,-2],[7,0],[12,3],[18,8],[24,13],[27,16],[29,18],[29,18],[25,14],[18,9],[10,4],[5,0]],'Zlatibor':[[2,-5],[3,-5],[8,-2],[12,2],[17,7],[20,10],[23,12],[23,12],[19,8],[14,4],[7,0],[3,-3]],'Kotor':[[12,4],[13,5],[16,7],[19,10],[24,14],[28,17],[31,20],[31,20],[27,17],[22,13],[17,9],[13,6]],'Žabljak':[[-1,-9],[1,-9],[4,-5],[9,-1],[14,4],[18,8],[22,10],[22,10],[17,7],[12,3],[5,-2],[0,-7]],'Sarajevo':[[3,-4],[6,-3],[11,0],[15,4],[21,9],[24,12],[26,13],[26,13],[22,10],[17,5],[10,2],[4,-2]],'Zadar':[[11,4],[12,5],[15,7],[18,10],[23,14],[27,18],[30,21],[30,21],[26,17],[21,13],[16,9],[12,5]],'Ljubljana':[[3,-3],[7,-1],[12,2],[17,6],[22,11],[25,14],[27,16],[27,15],[22,12],[16,7],[9,2],[4,-2]],'Bovec':[[4,-4],[7,-3],[11,1],[16,4],[20,9],[24,13],[26,14],[26,14],[21,11],[16,7],[9,2],[4,-2]],'Vienna':[[4,-2],[6,-1],[11,3],[16,6],[21,11],[24,14],[27,16],[26,16],[21,12],[15,7],[8,3],[4,0]],'Prague':[[2,-3],[4,-2],[9,1],[15,4],[20,9],[22,12],[25,14],[25,14],[20,10],[13,5],[7,1],[3,-2]],'Kraków':[[1,-5],[3,-4],[9,-1],[15,4],[21,9],[23,12],[25,14],[25,14],[19,9],[14,4],[6,0],[2,-3]],'Zakopane':[[-1,-8],[0,-8],[5,-4],[10,0],[16,4],[19,8],[21,10],[20,10],[16,6],[12,2],[4,-3],[0,-6]],'Barcelona':[[14,5],[15,5],[18,8],[19,10],[23,13],[27,17],[29,20],[29,20],[26,17],[22,13],[17,9],[14,6]],'Madrid':[[11,2],[13,3],[17,5],[19,7],[23,11],[30,16],[33,19],[33,18],[28,15],[21,10],[14,5],[11,2]],'Granada':[[12,2],[14,3],[18,5],[20,7],[24,11],[30,15],[34,18],[33,18],[29,15],[22,10],[16,5],[12,2]],'Lisbon':[[15,8],[16,9],[18,10],[19,12],[22,14],[25,16],[28,18],[28,18],[26,17],[22,14],[18,11],[15,9]],'Madeira':[[19,13],[19,13],[20,13],[20,14],[22,15],[23,17],[25,19],[26,20],[25,19],[23,17],[22,15],[20,14]],'JB':[[31,23],[32,23],[32,23],[32,24],[32,24],[32,24],[32,24],[32,24],[32,23],[31,23],[31,23],[31,23]],};function gT(s){if(!s||!s.ci)return s&&s.tmp||'?';const t=CTEMP[s.ci];if(!t)return s.tmp||'?';let m=0;if(s.date){const d=new Date(s.date);if(!isNaN(d))m=d.getMonth();}const v=t[m];if(!v)return s.tmp||'?';return v[0]+'/'+v[1]+'°C';}
 const FEST={
 '2027-01-14':{n:'Makar Sankranti',co:'Nepal',e:'🎉印度教丰收节'},
 '2027-02-12':{n:'Maha Shivaratri',co:'Nepal',e:'🕉️湿婆之夜'},
@@ -452,7 +460,7 @@ h+=`<div class="it" draggable="true" data-i="${s._i}" style="border-left:4px sol
 <div class="inum" style="background:${coCol}">${s._i+1}</div>
 <div><div style="font-weight:600;color:${coCol}">${tI(s.tt)} ${s.co} ${s.sch?'<span class="tg tsc">申根</span>':''}</div><div style="color:var(--acc2);font-size:.85rem">${s.ci}</div></div>
 <span style="background:var(--accL);padding:2px 10px;border-radius:10px;font-size:.75rem;font-weight:600">${s.days}天</span>
-<span style="font-size:.82rem">${s.tmp||'?'}</span>
+<span style="font-size:.82rem">${gT(s)}</span>
 <span class="tg ${s.st==='confirmed'?'tok':'tpl'}">${s.st==='confirmed'?'已确认':'计划中'}</span>
 ${over?'<span class="tg twr">超预算</span>':''}
 <span style="margin-left:auto;font-size:.78rem;color:var(--t2)">${fD(s.date)}</span>
@@ -464,7 +472,7 @@ ${over?'<span class="tg twr">超预算</span>':''}
 </div></div>`;
 if(exp){h+=`<div class="ix" onclick="event.stopPropagation()">
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:.82rem;margin-bottom:8px">
-<div>🌡${s.tmp||'?'} · ⏰${s.tz||'?'} · 👕${s.cl||'—'}</div>
+<div>🌡${gT(s)} · ⏰${s.tz||'?'} · 👕${s.cl||'—'}</div>
 <div>${s.tr?'🚀'+s.tr:''}${s.sl?` · <a href="${s.sl}" target="_blank">🔗住宿</a>`:''}</div></div>
 ${s.pl&&s.pl.length?`<div style="margin-bottom:8px"><strong style="font-size:.78rem">📍 景点</strong>
 ${s.pl.map((p,pi)=>`<div class="pi"><span style="color:var(--acc);flex-shrink:0">•</span><div style="flex:1"><strong>${p.n}</strong>${p.r?` <span style="color:var(--t2)">— ${p.r}</span>`:''}</div>
@@ -497,7 +505,7 @@ function sForm(s,p){return`<div class="fg"><div class="fr"><label>国家</label>
 ${Object.keys(CDB).map(c=>`<option ${c===s.co?'selected':''}>${c}</option>`).join('')}</select></div>
 <div class="fr"><label>城市</label><select id="${p}ci">${(CDB[s.co]||[]).map(c=>`<option ${c===s.ci?'selected':''}>${c}</option>`).join('')}<option value="__">自定义</option></select>
 <input id="${p}cic" style="display:${s.ci&&!(CDB[s.co]||[]).includes(s.ci)?'block':'none'};margin-top:3px" value="${s.ci||''}"></div></div>
-<div class="fg"><div class="fr"><label>天数</label><input id="${p}d" type="number" value="${s.days||5}"></div><div class="fr"><label>温度</label><input id="${p}tmp" value="${s.tmp||''}"></div></div>
+<div class="fg"><div class="fr"><label>天数</label><input id="${p}d" type="number" value="${s.days||5}"></div><div class="fr"><label>温度(自动)</label><input id="${p}tmp" placeholder="${gT(s)}" value="${s.tmp||''}" readonly style="background:rgba(0,0,0,.05);cursor:not-allowed"></div></div>
 <div class="fg"><div class="fr"><label>时差</label><input id="${p}tz" value="${s.tz||''}"></div><div class="fr"><label>申根</label><select id="${p}sch"><option value="0" ${!s.sch?'selected':''}>否</option><option value="1" ${s.sch?'selected':''}>是</option></select></div></div>
 <div class="fg"><div class="fr"><label>状态</label><select id="${p}st"><option value="confirmed" ${s.st==='confirmed'?'selected':''}>已确认</option><option value="planning">计划中</option></select></div>
 <div class="fr"><label>交通类型</label><select id="${p}tt"><option value="bus" ${s.tt==='bus'?'selected':''}>Bus</option><option value="flight" ${s.tt==='flight'?'selected':''}>Flight</option><option value="train" ${s.tt==='train'?'selected':''}>Train</option></select></div></div>
@@ -554,7 +562,7 @@ const key=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;con
 const col=s?(CCOUNTRY[s.co]||'var(--acc)'):'transparent';
 h+=`<div class="cal-day ${s?'has':''}" style="background:${s?col+'18':'transparent'};border-color:${s?col+'40':'transparent'}" ${s?`onclick="calEdit(${s.id})"`:''}>
 <div style="font-weight:600;font-size:.7rem;color:var(--t2)">${d}</div>
-${s?`<div style="font-weight:700;color:${col};font-size:.65rem;line-height:1.1">${s.ci}</div><div style="font-size:.6rem;color:var(--t2)">${s.tmp||''}</div>`:''}
+${s?`<div style="font-weight:700;color:${col};font-size:.65rem;line-height:1.1">${s.ci}</div><div style="font-size:.6rem;color:var(--t2)">${gT(s)}</div>`:''}
 ${FEST[key]?`<div style="font-size:.55rem;color:var(--org);font-weight:700;line-height:1" title="${FEST[key].e}">🎪${FEST[key].n.substring(0,8)}</div>`:''}</div>`;
 }h+=`</div></div>`;cur=new Date(y,m+1,1)}
 el.innerHTML=h;
@@ -1032,6 +1040,7 @@ window.syncDown=async()=>{
 
 ld();R.dashboard();
 window.addEventListener('beforeunload',sv);
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(e=>console.log('SW reg failed',e));});}
 </script>
 </body>
 </html>
