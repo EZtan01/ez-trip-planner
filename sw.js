@@ -1,6 +1,6 @@
 // EZ Trip Planner — Service Worker
 // Cache-first strategy for offline access
-const CACHE_NAME = 'ez-trip-v1';
+const CACHE_NAME = 'ez-trip-v2';
 const ASSETS = [
   './',
   './index.html',
