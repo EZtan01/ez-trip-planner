@@ -1,6 +1,6 @@
 // EZ Trip Planner — Service Worker
-// Cache-first strategy for offline access
-const CACHE_NAME = 'ez-trip-v3';
+// Stale-while-revalidate: serve cache instantly, update in background
+const CACHE_NAME = 'ez-trip-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -27,22 +27,34 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Network-first for GitHub Gist API (sync should always try fresh)
+  // Network-first for GitHub Gist API
   if (e.request.url.includes('api.github.com')) {
     e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
     return;
   }
-  // Cache-first for everything else (the app shell)
+
+  // Stale-while-revalidate for app files:
+  // 1. Return cached version immediately (fast load)
+  // 2. Fetch fresh version in background and update cache
+  // 3. If fresh version differs, notify user to reload
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(resp => {
-        if (resp && resp.status === 200 && e.request.method === 'GET') {
-          const copy = resp.clone();
-          caches.open(CACHE_NAME).then(c => c.put(e.request, copy));
-        }
-        return resp;
-      });
-    })
+    caches.open(CACHE_NAME).then(cache =>
+      cache.match(e.request).then(cached => {
+        const fetchPromise = fetch(e.request).then(resp => {
+          if (resp && resp.status === 200 && e.request.method === 'GET') {
+            cache.put(e.request, resp.clone());
+            // Notify clients that new content is available
+            if (cached && e.request.url.includes('index.html')) {
+              self.clients.matchAll().then(clients => {
+                clients.forEach(c => c.postMessage({ type: 'UPDATE_AVAILABLE' }));
+              });
+            }
+          }
+          return resp;
+        }).catch(() => cached);
+
+        return cached || fetchPromise;
+      })
+    )
   );
 });
