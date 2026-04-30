@@ -1179,7 +1179,8 @@ window.saveSync=function(){
 ld();R.dashboard();
 initSync();
 window.addEventListener('beforeunload',sv);
-if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(e=>console.log('SW reg failed',e));});}
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(e=>console.log('SW reg failed',e));});
+navigator.serviceWorker.addEventListener('message',e=>{if(e.data&&e.data.type==='UPDATE_AVAILABLE'){tToast('🔄 有新版本！点击刷新');setTimeout(()=>location.reload(),3000)}});}
 </script>
 </body>
 </html>
