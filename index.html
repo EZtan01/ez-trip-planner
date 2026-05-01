@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="EZ Trip">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -160,6 +161,7 @@ h2{font-size:1.25rem;font-weight:800;margin-bottom:18px;color:var(--acc2)}
 <button class="nt" data-p="notes">备註</button>
 <button class="nt" data-p="goals">目标</button>
 <button class="nt" data-p="suggestions">建议</button>
+<button class="nt" data-p="map">地图</button>
 <button class="nt" data-p="currency">汇率</button>
 </nav>
 <div class="pg on" id="pg-dashboard"></div>
@@ -170,6 +172,7 @@ h2{font-size:1.25rem;font-weight:800;margin-bottom:18px;color:var(--acc2)}
 <div class="pg" id="pg-notes"></div>
 <div class="pg" id="pg-goals"></div>
 <div class="pg" id="pg-suggestions"></div>
+<div class="pg" id="pg-map"></div>
 <div class="pg" id="pg-currency"></div>
 <div class="mbg" id="modal"><div class="md" id="mc"></div></div>
 <script>
@@ -901,6 +904,100 @@ window.editDaily=(gi,di)=>{openM(`<h3>编辑每日习惯</h3><div class="fr"><la
 <button class="btn bd" onclick="D.gl[${gi}].daily.splice(${di},1);sv();closeM();R.goals()">删除</button>
 <button class="btn bp" onclick="D.gl[${gi}].daily[${di}]=document.getElementById('dn').value;sv();closeM();R.goals()">保存</button></div>`)};
 
+// ============ MAP ============
+const COORDS={Kathmandu:[27.7172,85.324],Pokhara:[28.2096,83.9856],'New Delhi':[28.6139,77.209],
+Almaty:[43.238,76.9457],Karakol:[42.4907,78.3936],Tbilisi:[41.7151,44.8271],
+Borjomi:[41.8394,43.5292],Yerevan:[40.1792,44.4991],Kutaisi:[42.2679,42.6946],
+Sofia:[42.6977,23.3219],Plovdiv:[42.1354,24.7453],Ohrid:[41.1231,20.8016],
+Kotor:[42.4247,18.7712],'Žabljak':[43.1553,19.1226],Mostar:[43.3438,17.8078],
+Sarajevo:[43.8563,18.4131],Zadar:[44.1194,15.2314],'Šibenik':[43.7351,15.8952],
+Ljubljana:[46.0569,14.5058],Bovec:[46.3381,13.5522],Bolzano:[46.4983,11.3548],
+Vienna:[48.2082,16.3738],'Kraków':[50.0647,19.945],Zakopane:[49.299,19.9496],
+Barcelona:[41.3874,2.1686],Madrid:[40.4168,-3.7038],Granada:[37.1773,-3.5986],
+Lisbon:[38.7223,-9.1393],Porto:[41.1579,-8.6291],Madeira:[32.6669,-16.9241],
+JB:[1.4927,103.7414],Bucharest:[44.4268,26.1025],'Brașov':[45.6427,25.5887],
+Sibiu:[45.7983,24.1256],'Timișoara':[45.7489,21.2087],Belgrade:[44.7866,20.4489],
+Zlatibor:[43.7311,19.703],Prague:[50.0755,14.4378],Riga:[56.9496,24.1052]};
+let _map=null,_mapReady=false;
+R.map=function(){
+const el=document.getElementById('pg-map');
+if(!_mapReady){
+el.innerHTML=`<h2>🗺️ 路线地图</h2>
+<div style="display:flex;gap:8px;margin:10px 0;flex-wrap:wrap;align-items:center">
+<span style="display:inline-flex;align-items:center;gap:4px;font-size:.78rem;color:var(--t2)"><span style="width:10px;height:10px;border-radius:50%;background:var(--acc)"></span> 活跃行程</span>
+<span style="display:inline-flex;align-items:center;gap:4px;font-size:.78rem;color:var(--t2)"><span style="width:10px;height:10px;border-radius:50%;background:#aaa;opacity:.5"></span> 待定</span>
+<span style="display:inline-flex;align-items:center;gap:4px;font-size:.78rem;color:var(--t2)">— — 路线</span>
+<span id="map-info" style="flex:1;text-align:right;font-size:.78rem;color:var(--t2)">点击标记查看详情</span>
+</div>
+<div id="mapC" style="height:550px;border-radius:10px;border:1px solid var(--bdr);z-index:0"></div>
+<div id="map-list" style="margin-top:12px"></div>`;
+setTimeout(()=>{initMap()},100);
+}else if(_map){setTimeout(()=>_map.invalidateSize(),200)}
+};
+function initMap(){
+if(typeof L==='undefined'){setTimeout(initMap,200);return}
+_map=L.map('mapC',{scrollWheelZoom:true,zoomControl:true}).setView([43,20],4);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png',{
+attribution:'OpenStreetMap | CartoDB',maxZoom:18,subdomains:'abcd'}).addTo(_map);
+const active=D.stops.filter(s=>!s.standby);
+const standby=D.stops.filter(s=>s.standby);
+const pts=[];let n=0;
+active.forEach((s,i)=>{
+const c=COORDS[s.ci];if(!c)return;n++;
+const col=CCOUNTRY[s.co]||'var(--acc)';
+const sz=Math.min(28,Math.max(16,s.days*1.2+10));
+const icon=L.divIcon({className:'',
+html:`<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${col};border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3);cursor:pointer">${n}</div>`,
+iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]});
+const mk=L.marker(c,{icon}).addTo(_map);
+const dateStr=s.date?new Date(s.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';
+mk.bindTooltip(`<strong>${n}. ${s.ci}</strong><br>${s.co} · ${s.days}天${dateStr?' · '+dateStr:''}`,{direction:'top',offset:[0,-sz/2]});
+mk.on('click',()=>{document.getElementById('map-info').innerHTML=
+`<strong>#${n} ${s.ci}</strong> (${s.co}) — ${s.days}天 ${dateStr}`});
+pts.push(c);
+});
+if(pts.length>1){
+const segments=[];
+for(let i=0;i<pts.length-1;i++){
+const a=pts[i],b=pts[i+1];
+const dist=Math.sqrt(Math.pow(a[0]-b[0],2)+Math.pow(a[1]-b[1],2));
+if(dist>30){
+const mid1=[a[0]+(b[0]-a[0])*0.33,a[1]+(b[1]-a[1])*0.33];
+const mid2=[a[0]+(b[0]-a[0])*0.67,a[1]+(b[1]-a[1])*0.67];
+segments.push({pts:[a,mid1],col:CCOUNTRY[active[i].co]||'#c87b62'});
+segments.push({pts:[mid1,mid2],col:'#999',dash:'4,8'});
+segments.push({pts:[mid2,b],col:CCOUNTRY[active[i+1].co]||'#c87b62'});
+}else{
+segments.push({pts:[a,b],col:CCOUNTRY[active[i].co]||'#c87b62'});
+}
+}
+segments.forEach(sg=>{
+L.polyline(sg.pts,{color:sg.col,weight:2.5,opacity:0.7,dashArray:sg.dash||'6,4'}).addTo(_map);
+});
+}
+standby.forEach(s=>{
+const c=COORDS[s.ci];if(!c)return;
+const icon=L.divIcon({className:'',
+html:`<div style="width:10px;height:10px;border-radius:50%;background:#aaa;opacity:.5;border:1.5px solid #fff"></div>`,
+iconSize:[10,10],iconAnchor:[5,5]});
+const mk=L.marker(c,{icon}).addTo(_map);
+mk.bindTooltip(`${s.ci} (待定)`,{direction:'top',offset:[0,-5]});
+});
+if(pts.length)_map.fitBounds(L.latLngBounds(pts).pad(0.15));
+_mapReady=true;
+let listH='<div class="c"><div class="ct">📍 路线顺序</div><div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 0">';
+let nn=0;
+active.forEach(s=>{nn++;const col=CCOUNTRY[s.co]||'#c87b62';
+listH+=`<div style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;background:${col}18;border:1px solid ${col}40;font-size:.78rem">
+<span style="width:18px;height:18px;border-radius:50%;background:${col};color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center">${nn}</span>
+<span style="font-weight:600;color:${col}">${s.ci}</span>
+<span style="color:var(--t2);font-size:.7rem">${s.days}d</span></div>`;
+if(nn<active.length)listH+=`<span style="color:var(--t2);font-size:.7rem;display:flex;align-items:center">→</span>`;
+});
+listH+='</div></div>';
+document.getElementById('map-list').innerHTML=listH;
+}
+
 // ============ CURRENCY ============
 R.currency=function(){
 const el=document.getElementById('pg-currency');
@@ -1196,5 +1293,6 @@ window.addEventListener('beforeunload',sv);
 if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(e=>console.log('SW reg failed',e));});
 navigator.serviceWorker.addEventListener('message',e=>{if(e.data&&e.data.type==='UPDATE_AVAILABLE'){tToast('🔄 有新版本！点击刷新');setTimeout(()=>location.reload(),3000)}});}
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </body>
 </html>
