@@ -494,7 +494,7 @@ ${s.pl&&s.pl.length?`<div style="margin-bottom:8px"><strong style="font-size:.78
 ${s.pl.map((p,pi)=>`<div class="pi"><span style="color:var(--acc);flex-shrink:0">•</span><div style="flex:1"><strong>${p.n}</strong>${p.r?` <span style="color:var(--t2)">— ${p.r}</span>`:''}</div>
 <button class="bg" onclick="ePl(${s.id},${pi})">✏️</button><button class="bg" style="color:var(--red)" onclick="rPl(${s.id},${pi})">×</button></div>`).join('')}
 <button class="btn bs bsm" style="margin-top:4px" onclick="aPl(${s.id})">+ 景点</button></div>`
-:'<button class="btn bs bsm" style="margin-bottom:8px" onclick="aPl(${s.id})">+ 景点</button>'}
+:`<button class="btn bs bsm" style="margin-bottom:8px" onclick="aPl(${s.id})">+ 景点</button>`}
 <textarea style="width:100%;min-height:100px;font-size:.82rem" placeholder="备註..." onchange="D.stops[${s._i}].nt=this.value;sv()">${s.nt||''}</textarea>
 <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
 <button class="btn bs bsm" onclick="editS(${s.id})">✏️编辑</button>
