@@ -325,14 +325,14 @@ function fD(d){return d?new Date(d).toLocaleDateString('en-GB',{day:'numeric',mo
 function pc(a,b){return b?Math.round(a/b*100):0}
 function tI(t){return t==='flight'?'✈️':t==='bus'?'🚌':'🚂'}
 function cc(s){return(s.tc||0)+s.days*((s.food||0)+(s.stay||0)+(s.lt||0)+(s.tick||0))+(s.oth||0)}
-function tDays(){return D.stops.reduce((a,x)=>a+x.days,0)}
-function tTrip(){return D.stops.reduce((a,x)=>a+cc(x),0)}
+function tDays(){return D.stops.reduce((a,x)=>a+(x.standby?0:x.days),0)}
+function tTrip(){return D.stops.reduce((a,x)=>a+(x.standby?0:cc(x)),0)}
 function tPre(){return D.pc.reduce((a,x)=>a+x.v,0)}
 function fxM(){return D.fx.reduce((a,x)=>a+x.v,0)}
 function mo(){return Math.ceil(tDays()/30)||1}
 function tAll(){return tTrip()+tPre()+fxM()*mo()}
-function schD(){let d=0;D.stops.forEach(s=>{if(s.sch)d+=s.days});return d}
-function recalc(){if(!D.stops.length)return;let d=new Date('2027-01-14');D.stops.forEach(s=>{s.date=d.toISOString().split('T')[0];d.setDate(d.getDate()+s.days)})}
+function schD(){let d=0;D.stops.forEach(s=>{if(s.sch&&!s.standby)d+=s.days});return d}
+function recalc(){if(!D.stops.length)return;let d=new Date('2027-01-14');D.stops.forEach(s=>{if(s.standby){s.date='';return}s.date=d.toISOString().split('T')[0];d.setDate(d.getDate()+s.days)})}
 function regOf(c){for(const r of REG)if(r.c.includes(c))return r.n;return'🌍 其他'}
 function getGroups(){const g=[];let lr=null;D.stops.forEach((s,i)=>{const r=regOf(s.co);if(r!==lr){g.push({r,stops:[]});lr=r}g[g.length-1].stops.push({...s,_i:i})});return g}
 function savingsNeeded(){return tAll()-D.mi*mo()}
@@ -357,12 +357,13 @@ function getDwo(){if(!D.dwo||!Array.isArray(D.dwo)||D.dwo.length!==DWID.length)D
 // ============ DASHBOARD ============
 R.dashboard=function(){
 const el=document.getElementById('pg-dashboard');
-const trip=tTrip(),all=tAll(),days=tDays(),cn=[...new Set(D.stops.map(s=>s.co))].length;
-const conf=D.stops.filter(s=>s.st==='confirmed').length;
+const activeStops=D.stops.filter(s=>!s.standby);
+const trip=tTrip(),all=tAll(),days=tDays(),cn=[...new Set(activeStops.map(s=>s.co))].length;
+const conf=activeStops.filter(s=>s.st==='confirmed').length;
 const bp=pc(all,D.bgt),sd=schD(),m=mo(),avail=D.sav+D.mi*m;
 const savNeed=savingsNeeded();const sp=savPct();
 // Value rank
-const cD={};D.stops.forEach(s=>{if(s.co==='Malaysia')return;if(!cD[s.co])cD[s.co]={c:0,d:0};cD[s.co].c+=cc(s);cD[s.co].d+=s.days});
+const cD={};D.stops.forEach(s=>{if(s.co==='Malaysia'||s.standby)return;if(!cD[s.co])cD[s.co]={c:0,d:0};cD[s.co].c+=cc(s);cD[s.co].d+=s.days});
 const ranked=Object.entries(cD).map(([c,d])=>({c,avg:d.d?Math.round(d.c/d.d):0,t:d.c,d:d.d})).sort((a,b)=>a.avg-b.avg);
 const tdUndone=D.td.filter(x=>!x.dn);
 
@@ -460,7 +461,7 @@ const groups=getGroups();
 let h=`<div class="fb" style="margin-bottom:14px"><h2 style="margin:0">🗓️ 行程安排 <span style="font-size:.75rem;color:var(--t2);font-weight:400">点击展开 · 拖动排序</span></h2><button class="btn bp" onclick="openAdd()">+ 添加</button></div>`;
 groups.forEach(g=>{
 const open=D.ro[g.r]!==false;
-const rc=g.stops.reduce((a,x)=>a+cc(x),0),rd=g.stops.reduce((a,x)=>a+x.days,0),rconf=g.stops.filter(x=>x.st==='confirmed').length;
+const rc=g.stops.reduce((a,x)=>a+(x.standby?0:cc(x)),0),rd=g.stops.reduce((a,x)=>a+(x.standby?0:x.days),0),rconf=g.stops.filter(x=>x.st==='confirmed'&&!x.standby).length;
 h+=`<div class="rg"><div class="rh" onclick="D.ro['${g.r}']=!${open};sv();R.itinerary()">
 <span class="ra ${open?'open':''}">▶</span><span class="rt">${g.r}</span>
 <div class="rs"><span>${rd}天</span><span>${fm(rc)}</span><span>${rconf}/${g.stops.length}✓</span></div></div>`;
@@ -468,15 +469,17 @@ if(open){h+=`<div class="rb">`;
 g.stops.forEach(s=>{
 const exp=expId===s.id,cost=cc(s),over=cost>s.bg&&s.bg>0;
 const coCol=CCOUNTRY[s.co]||'var(--acc)';
-h+=`<div class="it" draggable="true" data-i="${s._i}" style="border-left:4px solid ${coCol}" ondragstart="ds(event,${s._i})" ondragover="dv(event)" ondrop="dp(event,${s._i})" ondragend="de(event)" onclick="tgl(${s.id})">
+const isSb=s.standby;
+h+=`<div class="it" draggable="true" data-i="${s._i}" style="border-left:4px solid ${isSb?'var(--t3)':coCol};${isSb?'opacity:.5;':''}${isSb?'background:var(--s3);':''}" ondragstart="ds(event,${s._i})" ondragover="dv(event)" ondrop="dp(event,${s._i})" ondragend="de(event)" onclick="tgl(${s.id})">
 <div class="ir">
-<div class="inum" style="background:${coCol}">${s._i+1}</div>
-<div><div style="font-weight:600;color:${coCol}">${tI(s.tt)} ${s.co} ${s.sch?'<span class="tg tsc">申根</span>':''}</div><div style="color:var(--acc2);font-size:.85rem">${s.ci}</div></div>
-<span style="background:var(--accL);padding:2px 10px;border-radius:10px;font-size:.75rem;font-weight:600">${s.days}天</span>
+<div class="inum" style="background:${isSb?'var(--t3)':coCol}">${isSb?'⏸':s._i+1}</div>
+<div><div style="font-weight:600;color:${isSb?'var(--t3)':coCol};${isSb?'text-decoration:line-through':''}">${tI(s.tt)} ${s.co} ${s.sch?'<span class="tg tsc">申根</span>':''}</div><div style="color:${isSb?'var(--t3)':'var(--acc2)'};font-size:.85rem;${isSb?'text-decoration:line-through':''}">${s.ci}</div></div>
+${isSb?'<span class="tg" style="background:var(--t3);color:#fff;font-size:.65rem">待定</span>':''}
+<span style="background:${isSb?'var(--s3)':'var(--accL)'};padding:2px 10px;border-radius:10px;font-size:.75rem;font-weight:600;${isSb?'text-decoration:line-through;color:var(--t3)':''}">${s.days}天</span>
 <span style="font-size:.82rem">${gT(s)}</span>
-<span class="tg ${s.st==='confirmed'?'tok':'tpl'}">${s.st==='confirmed'?'已确认':'计划中'}</span>
-${over?'<span class="tg twr">超预算</span>':''}
-<span style="margin-left:auto;font-size:.78rem;color:var(--t2)">${fD(s.date)}</span>
+${isSb?'':'<span class="tg '+( s.st==='confirmed'?'tok':'tpl')+'">'+(s.st==='confirmed'?'已确认':'计划中')+'</span>'}
+${over&&!isSb?'<span class="tg twr">超预算</span>':''}
+<span style="margin-left:auto;font-size:.78rem;color:var(--t2)">${isSb?'待定':fD(s.date)}</span>
 </div>
 <div style="display:flex;gap:14px;margin-top:6px;font-size:.78rem;color:var(--t2)">
 <span>🚗${fm(s.tc)} <span class="tg ${s.ts==='confirmed'?'tok':'tpl'}" style="font-size:.6rem">${s.ts}</span></span>
@@ -489,13 +492,14 @@ if(exp){h+=`<div class="ix" onclick="event.stopPropagation()">
 <div>${s.tr?'🚀'+s.tr:''}${s.sl?` · <a href="${s.sl}" target="_blank">🔗住宿</a>`:''}</div></div>
 ${s.pl&&s.pl.length?`<div style="margin-bottom:8px"><strong style="font-size:.78rem">📍 景点</strong>
 ${s.pl.map((p,pi)=>`<div class="pi"><span style="color:var(--acc);flex-shrink:0">•</span><div style="flex:1"><strong>${p.n}</strong>${p.r?` <span style="color:var(--t2)">— ${p.r}</span>`:''}</div>
-<button class="bg" onclick="ePl(${s._i},${pi})">✏️</button><button class="bg" style="color:var(--red)" onclick="rPl(${s._i},${pi})">×</button></div>`).join('')}
-<button class="btn bs bsm" style="margin-top:4px" onclick="aPl(${s._i})">+ 景点</button></div>`
-:'<button class="btn bs bsm" style="margin-bottom:8px" onclick="aPl(${s._i})">+ 景点</button>'}
+<button class="bg" onclick="ePl(${s.id},${pi})">✏️</button><button class="bg" style="color:var(--red)" onclick="rPl(${s.id},${pi})">×</button></div>`).join('')}
+<button class="btn bs bsm" style="margin-top:4px" onclick="aPl(${s.id})">+ 景点</button></div>`
+:'<button class="btn bs bsm" style="margin-bottom:8px" onclick="aPl(${s.id})">+ 景点</button>'}
 <textarea style="width:100%;min-height:100px;font-size:.82rem" placeholder="备註..." onchange="D.stops[${s._i}].nt=this.value;sv()">${s.nt||''}</textarea>
 <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
 <button class="btn bs bsm" onclick="editS(${s.id})">✏️编辑</button>
 <button class="btn bsm" style="background:${s.st==='confirmed'?'var(--s3)':'var(--grn)'};color:${s.st==='confirmed'?'var(--txt)':'#fff'}" onclick="D.stops[${s._i}].st=D.stops[${s._i}].st==='confirmed'?'planning':'confirmed';sv();R.itinerary()">${s.st==='confirmed'?'改为计划中':'✓确认'}</button>
+<button class="btn bsm" style="background:${isSb?'var(--blu)':'var(--org)'};color:#fff" onclick="D.stops[${s._i}].standby=!D.stops[${s._i}].standby;recalc();sv();R.itinerary()">${isSb?'↩️恢复行程':'⏸️移入待定'}</button>
 <button class="btn bd bsm" onclick="if(confirm('删除?')){D.stops.splice(${s._i},1);recalc();sv();R.itinerary()}">删除</button>
 </div></div>`}
 });h+=`</div>`}h+=`</div>`});
@@ -506,13 +510,13 @@ window.ds=(e,i)=>{e.dataTransfer.setData('text/plain',i);e.currentTarget.classLi
 window.dv=e=>{e.preventDefault();e.currentTarget.classList.add('dragover')};
 window.de=e=>{document.querySelectorAll('.it').forEach(x=>x.classList.remove('dragging','dragover'))};
 window.dp=(e,ti)=>{e.preventDefault();e.currentTarget.classList.remove('dragover');const fi=+e.dataTransfer.getData('text/plain');if(fi!==ti){const it=D.stops.splice(fi,1)[0];D.stops.splice(ti,0,it);recalc();sv();R.itinerary()}};
-window.aPl=idx=>{const s=D.stops[idx];if(!s)return;if(!s.pl)s.pl=[];
+window.aPl=id=>{const s=D.stops.find(x=>x.id===id);if(!s)return;if(!s.pl)s.pl=[];
 openM(`<h3>+ 景点</h3><div class="fr"><label>名称</label><input id="pn"></div><div class="fr"><label>备注(交通/时间/budget)</label><input id="pr"></div>
-<div class="ma"><button class="btn bs" onclick="closeM()">取消</button><button class="btn bp" onclick="if(!D.stops[${idx}].pl)D.stops[${idx}].pl=[];D.stops[${idx}].pl.push({n:document.getElementById('pn').value,r:document.getElementById('pr').value});sv();closeM();R.itinerary()">添加</button></div>`)};
-window.ePl=(idx,pi)=>{const p=D.stops[idx]?.pl?.[pi];if(!p)return;
+<div class="ma"><button class="btn bs" onclick="closeM()">取消</button><button class="btn bp" onclick="const _s=D.stops.find(x=>x.id===${id});if(_s){if(!_s.pl)_s.pl=[];_s.pl.push({n:document.getElementById('pn').value,r:document.getElementById('pr').value});sv();closeM();R.itinerary()}">添加</button></div>`)};
+window.ePl=(id,pi)=>{const s=D.stops.find(x=>x.id===id);const p=s?.pl?.[pi];if(!p)return;
 openM(`<h3>编辑景点</h3><div class="fr"><label>名称</label><input id="pn" value="${p.n}"></div><div class="fr"><label>备注</label><input id="pr" value="${p.r||''}"></div>
-<div class="ma"><button class="btn bs" onclick="closeM()">取消</button><button class="btn bp" onclick="D.stops[${idx}].pl[${pi}]={n:document.getElementById('pn').value,r:document.getElementById('pr').value};sv();closeM();R.itinerary()">保存</button></div>`)};
-window.rPl=(idx,pi)=>{D.stops[idx].pl.splice(pi,1);sv();R.itinerary()};
+<div class="ma"><button class="btn bs" onclick="closeM()">取消</button><button class="btn bp" onclick="const _s=D.stops.find(x=>x.id===${id});if(_s&&_s.pl){_s.pl[${pi}]={n:document.getElementById('pn').value,r:document.getElementById('pr').value};sv();closeM();R.itinerary()}">保存</button></div>`)};
+window.rPl=(id,pi)=>{const s=D.stops.find(x=>x.id===id);if(s&&s.pl){s.pl.splice(pi,1);sv();R.itinerary()}};
 
 function sForm(s,p){return`<div class="fg"><div class="fr"><label>国家</label><select id="${p}co" onchange="uCi('${p}')">
 ${Object.keys(CDB).map(c=>`<option ${c===s.co?'selected':''}>${c}</option>`).join('')}</select></div>
@@ -558,7 +562,7 @@ document.getElementById('eci').onchange=()=>{document.getElementById('ecic').sty
 R.calendar=function(){
 const el=document.getElementById('pg-calendar');
 if(!D.stops.length){el.innerHTML='<h2>📅</h2>';return}
-const dm={};D.stops.forEach(s=>{const d=new Date(s.date);for(let i=0;i<s.days;i++){dm[d.toISOString().split('T')[0]]=s;d.setDate(d.getDate()+1)}});
+const dm={};D.stops.forEach(s=>{if(s.standby||!s.date)return;const d=new Date(s.date);for(let i=0;i<s.days;i++){dm[d.toISOString().split('T')[0]]=s;d.setDate(d.getDate()+1)}});
 const endS=D.stops[D.stops.length-1],end=new Date(endS.date);end.setDate(end.getDate()+endS.days);
 let h=`<h2>📅 日历视图 <span style="font-size:.78rem;color:var(--t2);font-weight:400">点击编辑行程</span></h2>`;
 let cur=new Date(2027,0,1);
@@ -592,12 +596,12 @@ const el=document.getElementById('pg-budget');
 const trip=tTrip(),pre=tPre(),m=mo(),fM=fxM(),fxT=fM*m,all=trip+pre+fxT;
 const avail=D.sav+D.mi*m;
 const cat={tr:0,food:0,stay:0,lt:0,tick:0,oth:0};
-D.stops.forEach(s=>{cat.tr+=(s.tc||0);cat.food+=s.days*(s.food||0);cat.stay+=s.days*(s.stay||0);cat.lt+=s.days*(s.lt||0);cat.tick+=s.days*(s.tick||0);cat.oth+=(s.oth||0)});
+D.stops.forEach(s=>{if(s.standby)return;cat.tr+=(s.tc||0);cat.food+=s.days*(s.food||0);cat.stay+=s.days*(s.stay||0);cat.lt+=s.days*(s.lt||0);cat.tick+=s.days*(s.tick||0);cat.oth+=(s.oth||0)});
 const catL=['城际交通','餐饮','住宿','当地交通','门票/社交','Other'],catV=[cat.tr,cat.food,cat.stay,cat.lt,cat.tick,cat.oth];
 const catS=catV.reduce((a,b)=>a+b,0);
-const cT={};D.stops.forEach(s=>{if(s.co!=='Malaysia')cT[s.co]=(cT[s.co]||0)+cc(s)});
-const confT=D.stops.filter(s=>s.ts==='confirmed').reduce((a,x)=>a+(x.tc||0),0);
-const planT=D.stops.filter(s=>s.ts!=='confirmed').reduce((a,x)=>a+(x.tc||0),0);
+const cT={};D.stops.forEach(s=>{if(s.co!=='Malaysia'&&!s.standby)cT[s.co]=(cT[s.co]||0)+cc(s)});
+const confT=D.stops.filter(s=>s.ts==='confirmed'&&!s.standby).reduce((a,x)=>a+(x.tc||0),0);
+const planT=D.stops.filter(s=>s.ts!=='confirmed'&&!s.standby).reduce((a,x)=>a+(x.tc||0),0);
 
 let h=`<h2>💰 Budget 管理</h2>
 <div class="c"><div class="ct">🧮 收入 · 存款 · 设定</div>
