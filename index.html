@@ -932,12 +932,17 @@ const REGZONES=[
 ];
 let _map=null,_mapReady=false,_animOn=false,_animTimer=null,_planeMarker=null,_popupL=null,_trailLine=null;
 let _mapStops=[];
+let _animSpd=1;
+const _spdOpts=[{v:1,l:'1x 正常'},{v:2,l:'2x 快速'},{v:3,l:'3x 极速'},{v:0.5,l:'0.5x 慢速'}];
+let _spdIdx=0;
+function cycleSpeed(){_spdIdx=(_spdIdx+1)%_spdOpts.length;_animSpd=_spdOpts[_spdIdx].v;document.getElementById('speedBtn').innerHTML=_spdOpts[_spdIdx].l}
 R.map=function(){
 const el=document.getElementById('pg-map');
 if(!_mapReady){
 el.innerHTML=`<h2>🗺️ 路线地图</h2>
 <div style="display:flex;gap:8px;margin:10px 0;flex-wrap:wrap;align-items:center">
 <button id="animBtn" class="btn bp" style="font-size:.78rem;padding:5px 14px" onclick="toggleAnim()">▶ 播放飞行动画</button>
+<button class="btn bs" style="font-size:.78rem;padding:5px 10px" onclick="cycleSpeed()" id="speedBtn">1x 正常</button>
 ${REGZONES.map(r=>`<span style="display:inline-flex;align-items:center;gap:4px;font-size:.72rem;color:${r.col};cursor:pointer;padding:3px 8px;border-radius:12px;background:${r.col}15;border:1px solid ${r.col}30" onclick="stopAnim();if(_map){_map.fitBounds([${JSON.stringify(r.bounds)}],{padding:[30,30]})}">${r.n}</span>`).join('')}
 </div>
 <div id="map-info" style="font-size:.85rem;color:var(--t2);margin:6px 0;min-height:24px;transition:all .3s">点击 ▶ 开始飞行动画 · 点击板块跳转区域</div>
@@ -972,7 +977,7 @@ const reg=getRegion(s.co);
 const dateStr=s.date?new Date(s.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'';
 _planeMarker.setLatLng(s.c);
 const zoomLvl=s.ci==='JB'?6:s.ci==='Madeira'?8:idx<=4?7:8;
-_map.flyTo(s.c,zoomLvl,{duration:1.8,easeLinearity:0.3});
+_map.flyTo(s.c,zoomLvl,{duration:1.8/_animSpd,easeLinearity:0.3});
 _animTimer=setTimeout(()=>{
 if(!_animOn)return;
 if(_popupL){_map.removeLayer(_popupL);_popupL=null}
@@ -993,23 +998,23 @@ if(_popupL){_map.removeLayer(_popupL);_popupL=null}
 const nextIdx=(idx+1)%_mapStops.length;
 const next=_mapStops[nextIdx];
 if(nextIdx===0){
-_map.flyTo([35,40],3,{duration:2});
+_map.flyTo([35,40],3,{duration:2/_animSpd});
 _animTimer=setTimeout(()=>{
 if(!_animOn)return;
 if(_trailLine){_map.removeLayer(_trailLine);_trailLine=L.polyline([],{color:'var(--acc)',weight:2,opacity:0.5}).addTo(_map)}
 animStep(0);
-},2500);
+},2500/_animSpd);
 return;
 }
 const dist=Math.sqrt(Math.pow(s.c[0]-next.c[0],2)+Math.pow(s.c[1]-next.c[1],2));
 const outZoom=dist>30?3:dist>10?4:5;
-_map.flyTo([(s.c[0]+next.c[0])/2,(s.c[1]+next.c[1])/2],outZoom,{duration:1.2});
+_map.flyTo([(s.c[0]+next.c[0])/2,(s.c[1]+next.c[1])/2],outZoom,{duration:1.2/_animSpd});
 _animTimer=setTimeout(()=>{
 if(!_animOn)return;
 animatePlane(s.c,next.c,()=>{animStep(nextIdx)});
-},1400);
-},2800);
-},2000);
+},1400/_animSpd);
+},2800/_animSpd);
+},2000/_animSpd);
 }
 function animatePlane(from,to,cb){
 if(!_animOn){return}
@@ -1029,7 +1034,7 @@ const lng=from[1]+dy*step;
 _planeMarker.setLatLng([lat,lng]);
 trail.push([lat,lng]);
 if(_trailLine)_trailLine.setLatLngs(trail);
-if(step<steps){_animTimer=setTimeout(tick,35)}
+if(step<steps){_animTimer=setTimeout(tick,35/_animSpd)}
 else{if(cb)cb()}
 }
 tick();
