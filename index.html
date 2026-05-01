@@ -657,9 +657,9 @@ return gap>0?`<div class="calcr calcbad">⚠️ 资金缺口 <strong>${fm(gap)}<
 
 <div class="c"><div class="ct">📋 每站 Budget 详情</div>
 <div style="overflow-x:auto"><table class="bt"><thead><tr><th>#</th><th>国家</th><th>城市</th><th>天</th><th>交通费</th><th>交通</th><th>食/天</th><th>住/晚</th><th>交通/天</th><th>票/天</th><th>Other</th><th>预估总</th><th>Budget</th><th>差额</th></tr></thead><tbody>`;
-let tbg=0;
-D.stops.forEach((s,i)=>{const cost=cc(s),diff=s.bg-cost;tbg+=s.bg;
-h+=`<tr><td>${i+1}</td><td>${s.co}</td><td>${s.ci}</td><td>${s.days}</td>
+let tbg=0,rowN=0;
+D.stops.forEach((s,i)=>{if(s.standby)return;rowN++;const cost=cc(s),diff=s.bg-cost;tbg+=s.bg;
+h+=`<tr><td>${rowN}</td><td>${s.co}</td><td>${s.ci}</td><td>${s.days}</td>
 <td><input type="number" value="${s.tc}" onchange="D.stops[${i}].tc=+this.value;sv();R.budget()"></td>
 <td><select style="font-size:.7rem;padding:2px 3px;width:65px" onchange="D.stops[${i}].ts=this.value;sv();R.budget()"><option value="confirmed" ${s.ts==='confirmed'?'selected':''}>✓确认</option><option value="planning" ${s.ts!=='confirmed'?'selected':''}>⏳计划</option></select></td>
 <td><input type="number" value="${s.food}" onchange="D.stops[${i}].food=+this.value;sv();R.budget()"></td>
