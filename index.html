@@ -568,7 +568,7 @@ R.calendar=function(){
 const el=document.getElementById('pg-calendar');
 if(!D.stops.length){el.innerHTML='<h2>📅</h2>';return}
 const dm={};D.stops.forEach(s=>{if(s.standby||!s.date)return;const d=new Date(s.date);for(let i=0;i<s.days;i++){dm[d.toISOString().split('T')[0]]=s;d.setDate(d.getDate()+1)}});
-const endS=D.stops[D.stops.length-1],end=new Date(endS.date);end.setDate(end.getDate()+endS.days);
+const activeStops=D.stops.filter(s=>!s.standby&&s.date);if(!activeStops.length){el.innerHTML='<h2>📅</h2>';return}const endS=activeStops[activeStops.length-1],end=new Date(endS.date);end.setDate(end.getDate()+endS.days);
 let h=`<h2>📅 日历视图 <span style="font-size:.78rem;color:var(--t2);font-weight:400">点击编辑行程</span></h2>`;
 let cur=new Date(2027,0,1);
 while(cur<=end){
