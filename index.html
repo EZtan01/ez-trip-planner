@@ -182,7 +182,8 @@ const CDB={'Nepal':['Kathmandu','Pokhara','Bandipur','Nagarkot','Chitwan'],'Indi
 'Poland':['Kraków','Zakopane','Warsaw','Wrocław','Szczawnica'],'Czech Republic':['Prague','Olomouc','Český Krumlov','Kutná Hora'],
 'Latvia':['Riga','Sigulda','Cēsis','Kuldīga'],'Spain':['Madrid','Barcelona','Granada','Seville','Valencia','Ronda'],
 'Portugal':['Lisbon','Porto','Madeira','Sintra','Lagos'],'Malaysia':['JB','KL'],'Turkey':['Istanbul','Cappadocia'],
-'Croatia':['Dubrovnik','Split','Zagreb'],'Albania':['Tirana','Berat'],'Austria':['Vienna','Salzburg','Hallstatt'],
+'Croatia':['Dubrovnik','Split','Zagreb','Zadar','Šibenik'],'Albania':['Tirana','Berat'],'Austria':['Vienna','Salzburg','Hallstatt'],
+'North Macedonia':['Ohrid','Skopje','Bitola'],'Italy':['Bolzano','Rome','Florence','Venice','Milan'],
 'Hungary':['Budapest'],'Other':[]};
 const REG=[{n:'🏔️ 南亚',c:['Nepal','India']},{n:'🐴 中亚',c:['Kazakhstan','Kyrgyzstan']},
 {n:'🍷 高加索',c:['Georgia','Armenia']},{n:'🏰 巴尔干',c:['Bulgaria','North Macedonia','Romania','Serbia','Montenegro','Bosnia','Croatia']},
@@ -905,7 +906,7 @@ R.currency=function(){
 const el=document.getElementById('pg-currency');
 const rates={'MYR':1,'NPR':28.5,'INR':19.5,'KZT':103,'KGS':19.1,'GEL':0.58,'AMD':85,'BGN':0.39,'RON':1.02,'RSD':23.5,'EUR':0.21,'BAM':0.39,'TRY':8.3,'USD':0.23,'GBP':0.17};
 const cNames={'MYR':'🇲🇾 马来西亚 Ringgit','NPR':'🇳🇵 尼泊尔 Rupee','INR':'🇮🇳 印度 Rupee','KZT':'🇰🇿 哈萨克 Tenge','KGS':'🇰🇬 吉尔吉斯 Som','GEL':'🇬🇪 格鲁吉亚 Lari','AMD':'🇦🇲 亚美尼亚 Dram','BGN':'🇧🇬 保加利亚 Lev','RON':'🇷🇴 罗马尼亚 Leu','RSD':'🇷🇸 塞尔维亚 Dinar','EUR':'🇪🇺 欧元','BAM':'🇧🇦 波黑 Mark','TRY':'🇹🇷 土耳其 Lira','USD':'🇺🇸 美元','GBP':'🇬🇧 英镑'};
-const coMap={'Nepal':'NPR','India':'INR','Kazakhstan':'KZT','Kyrgyzstan':'KGS','Georgia':'GEL','Armenia':'AMD','Bulgaria':'BGN','Romania':'RON','Serbia':'RSD','Montenegro':'EUR','Bosnia':'BAM','Slovenia':'EUR','Austria':'EUR','Spain':'EUR','Portugal':'EUR'};
+const coMap={'Nepal':'NPR','India':'INR','Kazakhstan':'KZT','Kyrgyzstan':'KGS','Georgia':'GEL','Armenia':'AMD','Bulgaria':'BGN','Romania':'RON','Serbia':'RSD','Montenegro':'EUR','Bosnia':'BAM','Slovenia':'EUR','Austria':'EUR','Spain':'EUR','Portugal':'EUR','North Macedonia':'MKD','Italy':'EUR','Croatia':'EUR','Czech Republic':'CZK','Poland':'PLN'};
 const tripCur=[...new Set(D.stops.map(s=>coMap[s.co]).filter(Boolean))];
 
 let h=`<h2>💱 汇率转换器 <span style="font-size:.72rem;color:var(--t2);font-weight:400">参考汇率 · 出发前请更新</span></h2>`;
