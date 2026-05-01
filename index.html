@@ -139,6 +139,9 @@ h2{font-size:1.25rem;font-weight:800;margin-bottom:18px;color:var(--acc2)}
 
 .cal-day{min-height:58px;border-radius:8px;padding:4px 5px;font-size:.7rem;border:1px solid transparent;cursor:default;transition:.1s}
 .cal-day.has{cursor:pointer;border-color:var(--bdr)}.cal-day.has:hover{box-shadow:0 0 0 2px var(--acc)}
+.ez-pop .leaflet-popup-content-wrapper{border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.2);border:2px solid var(--acc)}
+.ez-pop .leaflet-popup-tip{border-top-color:var(--acc)}
+.ez-plane{z-index:9999!important}
 
 .ss{font-size:.72rem;color:var(--t2);padding:5px 10px;border-radius:8px;background:var(--s3);align-self:center;cursor:pointer;border:1px solid transparent;transition:all .2s;white-space:nowrap}
 .ss:hover{border-color:var(--acc)}
@@ -927,66 +930,154 @@ const REGZONES=[
 {n:'☀️ 西欧',col:'#be6e6e',center:[39,-4],bounds:[[35,-10],[43,4]]},
 {n:'🏠 回家',col:'#d4a07a',center:[2,104],bounds:[[-1,100],[5,106]]}
 ];
-let _map=null,_mapReady=false;
+let _map=null,_mapReady=false,_animOn=false,_animTimer=null,_planeMarker=null,_popupL=null,_trailLine=null;
+let _mapStops=[];
 R.map=function(){
 const el=document.getElementById('pg-map');
 if(!_mapReady){
 el.innerHTML=`<h2>🗺️ 路线地图</h2>
-<div style="display:flex;gap:10px;margin:10px 0;flex-wrap:wrap;align-items:center">
-${REGZONES.map(r=>`<span style="display:inline-flex;align-items:center;gap:4px;font-size:.72rem;color:${r.col};cursor:pointer;padding:3px 8px;border-radius:12px;background:${r.col}15;border:1px solid ${r.col}30" onclick="if(_map){_map.fitBounds([${JSON.stringify(r.bounds)}],{padding:[30,30]})}">${r.n}</span>`).join('')}
+<div style="display:flex;gap:8px;margin:10px 0;flex-wrap:wrap;align-items:center">
+<button id="animBtn" class="btn bp" style="font-size:.78rem;padding:5px 14px" onclick="toggleAnim()">▶ 播放飞行动画</button>
+${REGZONES.map(r=>`<span style="display:inline-flex;align-items:center;gap:4px;font-size:.72rem;color:${r.col};cursor:pointer;padding:3px 8px;border-radius:12px;background:${r.col}15;border:1px solid ${r.col}30" onclick="stopAnim();if(_map){_map.fitBounds([${JSON.stringify(r.bounds)}],{padding:[30,30]})}">${r.n}</span>`).join('')}
 </div>
-<div id="map-info" style="font-size:.82rem;color:var(--t2);margin:6px 0;min-height:20px">点击标记查看详情 · 点击板块按钮跳转区域</div>
+<div id="map-info" style="font-size:.85rem;color:var(--t2);margin:6px 0;min-height:24px;transition:all .3s">点击 ▶ 开始飞行动画 · 点击板块跳转区域</div>
 <div id="mapC" style="height:580px;border-radius:10px;border:1px solid var(--bdr);z-index:0"></div>
 <div id="map-list" style="margin-top:12px"></div>`;
 setTimeout(()=>{initMap()},100);
 }else if(_map){setTimeout(()=>_map.invalidateSize(),200)}
 };
 function getRegion(co){const r=REG.find(r=>r.c.includes(co));return r?r.n:'🌍 其他'}
+function toggleAnim(){if(_animOn)stopAnim();else startAnim()}
+function stopAnim(){
+_animOn=false;if(_animTimer)clearTimeout(_animTimer);_animTimer=null;
+if(_popupL){_map.removeLayer(_popupL);_popupL=null}
+const btn=document.getElementById('animBtn');if(btn)btn.innerHTML='▶ 播放飞行动画';
+document.getElementById('map-info').innerHTML='动画已停止 · 点击 ▶ 重新播放';
+}
+function startAnim(){
+_animOn=true;
+const btn=document.getElementById('animBtn');if(btn)btn.innerHTML='⏸ 停止动画';
+if(!_planeMarker){
+const pi=L.divIcon({className:'ez-plane',html:'<div style="font-size:28px;filter:drop-shadow(1px 2px 3px rgba(0,0,0,.4));transition:transform .3s">✈️</div>',iconSize:[32,32],iconAnchor:[16,16]});
+_planeMarker=L.marker(_mapStops[0].c,{icon:pi,zIndexOffset:9999}).addTo(_map);
+}
+_trailLine=L.polyline([],{color:'var(--acc)',weight:2,opacity:0.5}).addTo(_map);
+animStep(0);
+}
+function animStep(idx){
+if(!_animOn||!_mapStops.length)return;
+const s=_mapStops[idx];
+const col=CCOUNTRY[s.co]||'#c87b62';
+const reg=getRegion(s.co);
+const dateStr=s.date?new Date(s.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'';
+_planeMarker.setLatLng(s.c);
+const zoomLvl=s.ci==='JB'?6:s.ci==='Madeira'?8:idx<=4?7:8;
+_map.flyTo(s.c,zoomLvl,{duration:1.8,easeLinearity:0.3});
+_animTimer=setTimeout(()=>{
+if(!_animOn)return;
+if(_popupL){_map.removeLayer(_popupL);_popupL=null}
+const popH=`<div style="text-align:center;min-width:160px;padding:4px">
+<div style="font-size:18px;font-weight:700;color:${col}">${s.ci}</div>
+<div style="font-size:13px;color:#666;margin:4px 0">${s.co} · ${reg}</div>
+<div style="font-size:22px;font-weight:700;color:var(--acc);margin:6px 0">${s.days} 天</div>
+${dateStr?`<div style="font-size:11px;color:#999">${dateStr}</div>`:''}
+<div style="margin-top:6px;font-size:11px;color:#888">#${idx+1} / ${_mapStops.length}</div>
+</div>`;
+_popupL=L.popup({closeButton:false,className:'ez-pop',offset:[0,-20],autoPan:false})
+.setLatLng(s.c).setContent(popH).openOn(_map);
+document.getElementById('map-info').innerHTML=
+`✈️ <strong style="color:${col}">#${idx+1} ${s.ci}</strong> — ${s.co} · ${reg} · ${s.days}天 ${dateStr}`;
+_animTimer=setTimeout(()=>{
+if(!_animOn)return;
+if(_popupL){_map.removeLayer(_popupL);_popupL=null}
+const nextIdx=(idx+1)%_mapStops.length;
+const next=_mapStops[nextIdx];
+if(nextIdx===0){
+_map.flyTo([35,40],3,{duration:2});
+_animTimer=setTimeout(()=>{
+if(!_animOn)return;
+if(_trailLine){_map.removeLayer(_trailLine);_trailLine=L.polyline([],{color:'var(--acc)',weight:2,opacity:0.5}).addTo(_map)}
+animStep(0);
+},2500);
+return;
+}
+const dist=Math.sqrt(Math.pow(s.c[0]-next.c[0],2)+Math.pow(s.c[1]-next.c[1],2));
+const outZoom=dist>30?3:dist>10?4:5;
+_map.flyTo([(s.c[0]+next.c[0])/2,(s.c[1]+next.c[1])/2],outZoom,{duration:1.2});
+_animTimer=setTimeout(()=>{
+if(!_animOn)return;
+animatePlane(s.c,next.c,()=>{animStep(nextIdx)});
+},1400);
+},2800);
+},2000);
+}
+function animatePlane(from,to,cb){
+if(!_animOn){return}
+const steps=40;
+const dx=(to[0]-from[0])/steps;
+const dy=(to[1]-from[1])/steps;
+const angle=Math.atan2(to[1]-from[1],to[0]-from[0])*180/Math.PI;
+const el=_planeMarker.getElement();
+if(el)el.querySelector('div').style.transform=`rotate(${angle-90}deg)`;
+let step=0;
+const trail=[];
+function tick(){
+if(!_animOn)return;
+step++;
+const lat=from[0]+dx*step;
+const lng=from[1]+dy*step;
+_planeMarker.setLatLng([lat,lng]);
+trail.push([lat,lng]);
+if(_trailLine)_trailLine.setLatLngs(trail);
+if(step<steps){_animTimer=setTimeout(tick,35)}
+else{if(cb)cb()}
+}
+tick();
+}
 function initMap(){
 if(typeof L==='undefined'){setTimeout(initMap,200);return}
 _map=L.map('mapC',{scrollWheelZoom:true,zoomControl:true}).setView([43,20],4);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png',{
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
 attribution:'OpenStreetMap | CartoDB',maxZoom:18,subdomains:'abcd'}).addTo(_map);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',{
+maxZoom:18,subdomains:'abcd',pane:'shadowPane'}).addTo(_map);
 REGZONES.forEach(rz=>{
-L.rectangle(rz.bounds,{color:rz.col,weight:1.5,opacity:0.4,fillColor:rz.col,fillOpacity:0.06,dashArray:'6,4',interactive:false}).addTo(_map);
+L.rectangle(rz.bounds,{color:rz.col,weight:2,opacity:0.5,fillColor:rz.col,fillOpacity:0.07,dashArray:'8,4',interactive:false}).addTo(_map);
 const labelIcon=L.divIcon({className:'',
-html:`<div style="font-size:13px;font-weight:700;color:${rz.col};white-space:nowrap;text-shadow:1px 1px 3px rgba(255,255,255,.9),-1px -1px 3px rgba(255,255,255,.9);pointer-events:none">${rz.n}</div>`,
-iconSize:[120,20],iconAnchor:[60,10]});
+html:`<div style="font-size:14px;font-weight:700;color:${rz.col};white-space:nowrap;text-shadow:2px 2px 4px rgba(255,255,255,1),-2px -2px 4px rgba(255,255,255,1);pointer-events:none;letter-spacing:1px">${rz.n}</div>`,
+iconSize:[140,24],iconAnchor:[70,12]});
 L.marker(rz.center,{icon:labelIcon,interactive:false}).addTo(_map);
 });
 const active=D.stops.filter(s=>!s.standby);
 const standby=D.stops.filter(s=>s.standby);
-const pts=[];const ptData=[];let n=0;
+_mapStops=[];let n=0;
 active.forEach((s,i)=>{
 const c=COORDS[s.ci];if(!c)return;n++;
 const col=CCOUNTRY[s.co]||'#c87b62';
 const reg=getRegion(s.co);
 const sz=Math.min(30,Math.max(18,s.days*1.2+10));
 const icon=L.divIcon({className:'',
-html:`<div style="position:relative"><div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${col};border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3);cursor:pointer">${n}</div><div style="position:absolute;left:${sz+2}px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:600;color:${col};white-space:nowrap;text-shadow:1px 1px 2px rgba(255,255,255,.95),-1px -1px 2px rgba(255,255,255,.95);pointer-events:none">${s.ci}</div></div>`,
-iconSize:[sz+80,sz],iconAnchor:[sz/2,sz/2]});
+html:`<div style="position:relative"><div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${col};border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3);cursor:pointer">${n}</div><div style="position:absolute;left:${sz+3}px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:700;color:${col};white-space:nowrap;text-shadow:2px 2px 3px rgba(255,255,255,1),-1px -1px 3px rgba(255,255,255,1);pointer-events:none">${s.ci}</div></div>`,
+iconSize:[sz+90,sz],iconAnchor:[sz/2,sz/2]});
 const mk=L.marker(c,{icon,zIndexOffset:1000-i}).addTo(_map);
 const dateStr=s.date?new Date(s.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';
 mk.bindTooltip(`<div style="font-size:12px"><strong>#${n} ${s.ci}</strong><br><span style="color:${col}">${s.co}</span> · ${reg}<br>${s.days}天${dateStr?' · '+dateStr:''}</div>`,{direction:'top',offset:[0,-sz/2]});
-mk.on('click',()=>{document.getElementById('map-info').innerHTML=
-`<strong style="color:${col}">#${n} ${s.ci}</strong> — ${s.co} · ${reg} · ${s.days}天 ${dateStr}`});
-pts.push(c);ptData.push({co:s.co,col});
+mk.on('click',()=>{
+stopAnim();
+document.getElementById('map-info').innerHTML=`<strong style="color:${col}">#${n} ${s.ci}</strong> — ${s.co} · ${reg} · ${s.days}天 ${dateStr}`;
+_map.flyTo(c,9,{duration:1});
 });
-if(pts.length>1){
-for(let i=0;i<pts.length-1;i++){
-const a=pts[i],b=pts[i+1];
+_mapStops.push({c,co:s.co,ci:s.ci,days:s.days,date:s.date,col,reg,n});
+});
+if(_mapStops.length>1){
+for(let i=0;i<_mapStops.length-1;i++){
+const a=_mapStops[i].c,b=_mapStops[i+1].c;
 const dist=Math.sqrt(Math.pow(a[0]-b[0],2)+Math.pow(a[1]-b[1],2));
-const col=ptData[i].col;
+const col=_mapStops[i].col;
 if(dist>30){
-const mid=[a[0]+(b[0]-a[0])*0.5,a[1]+(b[1]-a[1])*0.5];
-L.polyline([a,b],{color:'#999',weight:1.5,opacity:0.4,dashArray:'4,8'}).addTo(_map);
-const flyIcon=L.divIcon({className:'',html:`<div style="font-size:14px;pointer-events:none">✈️</div>`,iconSize:[18,18],iconAnchor:[9,9]});
-L.marker(mid,{icon:flyIcon,interactive:false}).addTo(_map);
+L.polyline([a,b],{color:'#bbb',weight:1.5,opacity:0.35,dashArray:'3,8'}).addTo(_map);
 }else{
-L.polyline([a,b],{color:col,weight:3,opacity:0.65,dashArray:'8,5'}).addTo(_map);
-const mid=[(a[0]+b[0])/2,(a[1]+b[1])/2];
-const arrowIcon=L.divIcon({className:'',html:`<div style="font-size:10px;color:${col};pointer-events:none;text-shadow:1px 1px 2px #fff">▶</div>`,iconSize:[12,12],iconAnchor:[6,6]});
-L.marker(mid,{icon:arrowIcon,interactive:false}).addTo(_map);
+L.polyline([a,b],{color:col,weight:2.5,opacity:0.5,dashArray:'6,4'}).addTo(_map);
 }
 }
 }
@@ -998,25 +1089,23 @@ iconSize:[10,10],iconAnchor:[5,5]});
 const mk=L.marker(c,{icon}).addTo(_map);
 mk.bindTooltip(`${s.ci} (待定) · ${s.co}`,{direction:'top',offset:[0,-5]});
 });
-if(pts.length)_map.fitBounds(L.latLngBounds(pts).pad(0.15));
+if(_mapStops.length){const allPts=_mapStops.map(s=>s.c);_map.fitBounds(L.latLngBounds(allPts).pad(0.12))}
 _mapReady=true;
 let listH='';let curReg='';let nn=0;
-active.forEach((s,idx)=>{
-const c=COORDS[s.ci];if(!c)return;nn++;
-const col=CCOUNTRY[s.co]||'#c87b62';
-const reg=getRegion(s.co);
-const rz=REGZONES.find(r=>r.n===reg);
+_mapStops.forEach((s,idx)=>{
+nn++;
+const rz=REGZONES.find(r=>r.n===s.reg);
 const rzCol=rz?rz.col:'#888';
-if(reg!==curReg){
+if(s.reg!==curReg){
 if(curReg)listH+='</div></div>';
-curReg=reg;
-listH+=`<div class="c" style="border-left:3px solid ${rzCol}"><div class="ct" style="color:${rzCol}">${reg}</div><div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 0">`;
+curReg=s.reg;
+listH+=`<div class="c" style="border-left:3px solid ${rzCol}"><div class="ct" style="color:${rzCol}">${s.reg}</div><div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 0">`;
 }else if(nn>1){
 listH+=`<span style="color:var(--t2);font-size:.7rem;display:flex;align-items:center">→</span>`;
 }
-listH+=`<div style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;background:${col}18;border:1px solid ${col}40;font-size:.78rem;cursor:pointer" onclick="_map.setView([${c}],8)">
-<span style="width:18px;height:18px;border-radius:50%;background:${col};color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center">${nn}</span>
-<span style="font-weight:600;color:${col}">${s.ci}</span>
+listH+=`<div style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;background:${s.col}18;border:1px solid ${s.col}40;font-size:.78rem;cursor:pointer" onclick="stopAnim();_map.flyTo([${s.c}],9,{duration:1})">
+<span style="width:18px;height:18px;border-radius:50%;background:${s.col};color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center">${nn}</span>
+<span style="font-weight:600;color:${s.col}">${s.ci}</span>
 <span style="color:var(--t2);font-size:.7rem">${s.days}d</span></div>`;
 });
 if(curReg)listH+='</div></div>';
