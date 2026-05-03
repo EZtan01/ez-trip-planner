@@ -329,7 +329,7 @@ const SAVED={"bgt":90000,"sav":13000,"mi":5000,"stops":[{"id":1,"date":"2027-01-
 function ld(){try{const s=localStorage.getItem(SK);D=s?JSON.parse(s):null}catch(e){D=null}
 if(!D)D=JSON.parse(JSON.stringify(SAVED));
 if(!D.td)D.td=JSON.parse(JSON.stringify(TD0));if(!D.pc)D.pc=JSON.parse(JSON.stringify(PC0));if(!D.ro)D.ro={};if(!D.dwo)D.dwo=[...DWID];if(!D.gl)D.gl=JSON.parse(JSON.stringify(GL0));if(!D.glm)D.glm={};
-const _sv=JSON.parse(JSON.stringify(SAVED));const _have=new Set(D.stops.map(s=>s.id));_sv.stops.forEach(ns=>{if(!_have.has(ns.id))D.stops.push(JSON.parse(JSON.stringify(ns)))});const _fix={};_sv.stops.forEach(s=>{_fix[s.id]=s.co});D.stops.forEach(s=>{if(_fix[s.id]&&s.co!==_fix[s.id])s.co=_fix[s.id]})}
+const _sv=JSON.parse(JSON.stringify(SAVED));const _have=new Set(D.stops.map(s=>s.id));let _patched=false;_sv.stops.forEach(ns=>{if(!_have.has(ns.id)){D.stops.push(JSON.parse(JSON.stringify(ns)));_patched=true}});_sv.stops.forEach(ns=>{const s=D.stops.find(x=>x.id===ns.id);if(s&&s.co!==ns.co){s.co=ns.co;_patched=true}});if(_patched){D.__ts=Date.now();localStorage.setItem(SK,JSON.stringify(D))}}
 function sv(){D.__ts=Date.now();localStorage.setItem(SK,JSON.stringify(D));if(typeof scheduleAutoSync==='function')scheduleAutoSync()}
 function fm(n){return n!=null&&!isNaN(n)?'RM '+Math.round(n).toLocaleString():'—'}
 function fD(d){return d?new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'—'}
