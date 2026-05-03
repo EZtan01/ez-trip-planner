@@ -1351,6 +1351,11 @@ async function autoDown(notify){
   if(rTs<lTs)return;
   if(rTs===_lastDown&&rTs!==0)return;
   D=remote;
+  // Patch missing stops from SAVED
+  const _sv3=JSON.parse(JSON.stringify(SAVED));const _h3=new Set(D.stops.map(s=>s.id));let _p3=false;
+  _sv3.stops.forEach(ns=>{if(!_h3.has(ns.id)){D.stops.push(JSON.parse(JSON.stringify(ns)));_p3=true}});
+  _sv3.stops.forEach(ns=>{const s=D.stops.find(x=>x.id===ns.id);if(s&&s.co!==ns.co){s.co=ns.co;_p3=true}});
+  if(_p3){D.__ts=Date.now()}
   localStorage.setItem(SK,JSON.stringify(D));
   _lastDown=rTs;
   const curN=document.querySelector('.nt.on');
@@ -1369,6 +1374,11 @@ window.forcSync=async function(){
   const remote=await _silentDown();
   if(!remote){setSS('error');tToast('❌ 云端获取失败');return}
   D=remote;
+  // Patch missing stops from SAVED
+  const _sv4=JSON.parse(JSON.stringify(SAVED));const _h4=new Set(D.stops.map(s=>s.id));let _p4=false;
+  _sv4.stops.forEach(ns=>{if(!_h4.has(ns.id)){D.stops.push(JSON.parse(JSON.stringify(ns)));_p4=true}});
+  _sv4.stops.forEach(ns=>{const s=D.stops.find(x=>x.id===ns.id);if(s&&s.co!==ns.co){s.co=ns.co;_p4=true}});
+  if(_p4){D.__ts=Date.now()}
   localStorage.setItem(SK,JSON.stringify(D));
   _lastDown=remote.__ts||Date.now();
   const curN=document.querySelector('.nt.on');
@@ -1385,6 +1395,11 @@ async function initSync(){
   const remote=await _silentDown();
   if(remote){
     D=remote;
+    // Patch missing stops from SAVED into Gist data
+    const _sv2=JSON.parse(JSON.stringify(SAVED));const _h2=new Set(D.stops.map(s=>s.id));let _p2=false;
+    _sv2.stops.forEach(ns=>{if(!_h2.has(ns.id)){D.stops.push(JSON.parse(JSON.stringify(ns)));_p2=true}});
+    _sv2.stops.forEach(ns=>{const s=D.stops.find(x=>x.id===ns.id);if(s&&s.co!==ns.co){s.co=ns.co;_p2=true}});
+    if(_p2){D.__ts=Date.now()}
     localStorage.setItem(SK,JSON.stringify(D));
     _lastDown=remote.__ts||Date.now();
     const curN=document.querySelector('.nt.on');
