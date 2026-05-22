@@ -825,9 +825,19 @@ el.innerHTML=h;
 // ============ ACTUAL EXPENSE TRACKING ============
 let _acView='cat',_acFrom='',_acTo='',_acFCat='';
 R.actual=function(){
+console.time('R.actual');
 _migrate();
 const el=document.getElementById('pg-actual');
 const exEsc=t=>(t==null?'':(''+t)).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+// Pre-build date → stop index ONCE for this render (avoid quadratic _stopAt calls)
+console.time('R.actual:dateMap');
+const dateToStop={};
+D.stops.forEach(s=>{if(s.standby||!s.date)return;const sd=new Date(s.date+'T12:00:00');for(let i=0;i<s.days;i++){const dt=new Date(sd);dt.setDate(sd.getDate()+i);const k=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');dateToStop[k]=s}});
+const stopAt=d=>dateToStop[d]||null;
+// Pre-aggregate actual amount per stopId
+const actByStopId={};
+D.ex.forEach(e=>{const s=dateToStop[e.date];if(s){actByStopId[s.id]=(actByStopId[s.id]||0)+(+e.rmAmt||0)}});
+console.timeEnd('R.actual:dateMap');
 const planTot=tAll(),planTrip=tTrip();
 const actTot=_exTotalRm(D.ex);
 const usedPct=planTot?(actTot/planTot)*100:0;
@@ -861,11 +871,11 @@ if(_acView==='cat'){
   rows=Object.keys(m).map(k=>({k,n:m[k].name,c:m[k].col,plan:m[k].plan,act:m[k].actual}));
 }else if(_acView==='city'){
   const m={};D.stops.forEach(s=>{if(s.standby)return;const k=s.ci+'·'+s.co;if(!m[k])m[k]={n:s.ci,sub:s.co,c:CCOUNTRY[s.co]||'var(--acc)',plan:0,act:0,days:0};m[k].days+=s.days;m[k].plan+=cc(s)});
-  D.ex.forEach(e=>{const s=_stopAt(e.date);if(s){const k=s.ci+'·'+s.co;if(m[k])m[k].act+=(+e.rmAmt||0)}});
+  D.ex.forEach(e=>{const s=dateToStop[e.date];if(s){const k=s.ci+'·'+s.co;if(m[k])m[k].act+=(+e.rmAmt||0)}});
   rows=Object.values(m);
 }else if(_acView==='co'){
   const m={};D.stops.forEach(s=>{if(s.standby)return;if(!m[s.co])m[s.co]={n:s.co,c:CCOUNTRY[s.co]||'var(--acc)',plan:0,act:0,days:0};m[s.co].days+=s.days;m[s.co].plan+=cc(s)});
-  D.ex.forEach(e=>{const s=_stopAt(e.date);if(s&&m[s.co])m[s.co].act+=(+e.rmAmt||0)});
+  D.ex.forEach(e=>{const s=dateToStop[e.date];if(s&&m[s.co])m[s.co].act+=(+e.rmAmt||0)});
   rows=Object.values(m);
 }else if(_acView==='mo'){
   const m={};D.stops.forEach(s=>{if(s.standby||!s.date)return;const dp=s.days?cc(s)/s.days:0;const sd=new Date(s.date+'T12:00:00');for(let i=0;i<s.days;i++){const dt=new Date(sd);dt.setDate(sd.getDate()+i);const k=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');if(!m[k])m[k]={n:k,c:'var(--acc)',plan:0,act:0};m[k].plan+=dp}});
@@ -904,18 +914,19 @@ if(!filtered.length){h+=`<div style="font-size:.82rem;color:var(--t2);padding:10
 h+=`<div style="max-height:340px;overflow-y:auto;border:1px solid var(--bdr);border-radius:8px;padding:8px;background:var(--s2)">`;
 let lastDate='';
 filtered.forEach(e=>{
-  if(e.date!==lastDate){const stop=_stopAt(e.date);h+=`<div style="font-size:.72rem;color:var(--t2);background:rgba(0,0,0,.05);padding:4px 8px;border-radius:5px;margin:8px 0 4px;font-weight:600;position:sticky;top:0;backdrop-filter:blur(4px);z-index:1">${e.date}${stop?` · ${stop.ci}, ${stop.co}`:''}</div>`;lastDate=e.date}
+  if(e.date!==lastDate){const stop=dateToStop[e.date];h+=`<div style="font-size:.72rem;color:var(--t2);background:rgba(0,0,0,.05);padding:4px 8px;border-radius:5px;margin:8px 0 4px;font-weight:600;position:sticky;top:0;backdrop-filter:blur(4px);z-index:1">${e.date}${stop?` · ${stop.ci}, ${stop.co}`:''}</div>`;lastDate=e.date}
   const c=getExCat(e.cat);const tm=e.time==='M'?'🌅':e.time==='A'?'☀️':e.time==='E'?'🌙':'';
   h+=`<div class="pi" style="cursor:pointer" onclick="exEdit(${e.id},'actual')"><span style="background:${c.c}22;color:${c.c};padding:2px 6px;border-radius:5px;font-size:.66rem;font-weight:700;flex-shrink:0">${c.n}</span><div style="flex:1;font-size:.82rem">${tm}${tm?' ':''}${exEsc(e.desc)||'<span style="color:var(--t2)">(无描述)</span>'}</div><div style="text-align:right;font-size:.78rem;flex-shrink:0"><div style="font-weight:700;color:var(--acc2)">RM ${(+e.rmAmt||0).toFixed(2)}</div>${e.localCcy!=='MYR'?`<div style="color:var(--t2);font-size:.66rem">${e.localAmt} ${e.localCcy}</div>`:''}</div><button class="bg" style="color:var(--red)" onclick="event.stopPropagation();exDel(${e.id},'actual')">×</button></div>`;
 });
 h+=`</div><div style="font-size:.68rem;color:var(--t2);text-align:center;margin-top:6px">↕️ 上下滑动查看更多 · 点行编辑</div>`}h+=`</div>`;
 
 // === Compact Trip Summary ===
+console.time('R.actual:summary');
 let sumTotPlan=0,sumTotAct=0;
 h+=`<div class="c"><div class="ct">📋 旅程 Summary <span style="font-weight:400;color:var(--t2);font-size:.78rem">完整概览</span></div>
 <div style="overflow-x:auto"><table class="bt" style="font-size:.78rem"><thead><tr><th>#</th><th>日期</th><th>城市</th><th>国家</th><th>天</th><th>交通</th><th>计划</th><th>实际</th><th>差额</th></tr></thead><tbody>`;
 D.stops.forEach((s,i)=>{if(s.standby)return;
-  const stopAct=D.ex.filter(e=>{const st=_stopAt(e.date);return st&&st.id===s.id}).reduce((a,e)=>a+(+e.rmAmt||0),0);
+  const stopAct=actByStopId[s.id]||0;
   const stopPlan=cc(s);
   sumTotPlan+=stopPlan;sumTotAct+=stopAct;
   const diff=stopAct?stopAct-stopPlan:null;
@@ -928,6 +939,7 @@ const totDiff=sumTotAct-sumTotPlan;
 h+=`<tr style="border-top:2px solid var(--bdr);font-weight:700;background:var(--s2)"><td colspan="6" style="text-align:right">总计</td><td>${fm(sumTotPlan)}</td><td style="color:var(--acc2)">${fm(sumTotAct)}</td><td style="color:${sumTotAct?(totDiff>0?'var(--red)':'var(--grn)'):'var(--t2)'}">${sumTotAct?(totDiff>0?'+':'')+fm(totDiff):'—'}</td></tr>`;
 h+=`</tbody></table></div>
 <div style="font-size:.7rem;color:var(--t2);margin-top:8px">💡 点上方「📋 复制 Summary」可导出 markdown 文本（含差额），方便贴去 Notes/IG/分享。</div></div>`;
+console.timeEnd('R.actual:summary');
 
 // === Categories management ===
 h+=`<div class="c"><div class="ct">⚙️ 类别管理</div>
@@ -935,7 +947,10 @@ h+=`<div class="c"><div class="ct">⚙️ 类别管理</div>
 <button class="btn bs bsm" style="margin-top:8px" onclick="exAddCat()">+ 新增类别</button>
 <div style="font-size:.7rem;color:var(--t2);margin-top:6px">默认类别跟 Budget 对齐（食/住/城际/本地/门票/其他），不可删。自定义类别（如「购物」「社交」）可加可删。</div></div>`;
 
+console.time('R.actual:innerHTML');
 el.innerHTML=h;
+console.timeEnd('R.actual:innerHTML');
+console.timeEnd('R.actual');
 };
 window.acSetView=v=>{_acView=v;R.actual()};
 window.acFilter=(f,v)=>{if(f==='from')_acFrom=v;else if(f==='to')_acTo=v;else if(f==='cat')_acFCat=v;else if(f==='clear'){_acFrom='';_acTo='';_acFCat=''}R.actual()};
