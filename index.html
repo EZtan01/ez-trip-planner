@@ -398,8 +398,8 @@ document.getElementById('modal').addEventListener('click',function(e){if(e.targe
 const R={};let expId=null;
 
 // Dashboard widget order
-const DWID=['stats','savings','budget','rank','todo'];
-function getDwo(){if(!D.dwo||!Array.isArray(D.dwo)||D.dwo.length!==DWID.length)D.dwo=[...DWID];return D.dwo}
+const DWID=['stats','actual','savings','budget','rank','todo'];
+function getDwo(){if(!D.dwo||!Array.isArray(D.dwo))D.dwo=[...DWID];DWID.forEach(w=>{if(!D.dwo.includes(w))D.dwo.push(w)});D.dwo=D.dwo.filter(w=>DWID.includes(w));return D.dwo}
 
 // ============ DASHBOARD ============
 R.dashboard=function(){
@@ -432,6 +432,48 @@ W.stats=`<div class="dw g4" data-wid="stats" draggable="true">
 <div class="c st"><div class="sl">预估总花费</div><div class="sv" style="color:${all>D.bgt?'var(--red)':'var(--grn)'}">${fm(all)}</div><div class="sl">Budget ${fm(D.bgt)}</div></div>
 <div class="c st"><div class="sl">确认进度</div><div class="sv" style="color:var(--grn)">${conf}/${D.stops.length}</div><div class="sl">${D.stops.length-conf} 未确认</div></div>
 </div>`;
+
+// Actual spending widget
+const _actTot=(D.ex||[]).reduce((a,e)=>a+(+e.rmAmt||0),0);
+const _planTrip=tTrip();
+const _ceiling=D.bgt||0;
+const _leftCeil=_ceiling-_actTot;
+const _leftPlan=_planTrip-_actTot;
+const _usedPctC=_ceiling?(_actTot/_ceiling*100):0;
+const _sd0=new Date((D.sd||'2027-01-04')+'T12:00:00');
+const _today0=new Date();_today0.setHours(0,0,0,0);
+const _totalD=tDays();
+let _elapsed=Math.floor((_today0-_sd0)/86400000);
+const _notStarted=_elapsed<0;const _ended=_elapsed>=_totalD;
+if(_elapsed<0)_elapsed=0;if(_elapsed>_totalD)_elapsed=_totalD;
+const _remD=Math.max(0,_totalD-_elapsed);
+const _dailyAllow=_remD>0?(_leftCeil/_remD):0;
+const _dailyPlan=_totalD>0?(_planTrip/_totalD):0;
+const _dailyAct=_elapsed>0?(_actTot/_elapsed):0;
+const _tripStatusTxt=_notStarted?`距出发 ${Math.ceil((_sd0-_today0)/86400000)} 天`:_ended?`旅程已结束`:`旅行第 ${_elapsed+1} / ${_totalD} 天`;
+const _allowCol=_dailyAct>_dailyAllow&&_elapsed>0?'var(--red)':'var(--acc)';
+W.actual=`<div class="dw" data-wid="actual" draggable="true"><div class="c">
+<div class="ct" style="cursor:grab">⠿ 📒 实际开销 · 每日可花</div>
+<div class="ss">
+<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+<span style="font-size:.78rem;color:var(--t2)">已花费</span>
+<span style="font-size:1.05rem;font-weight:700;color:var(--acc2)">${fm(_actTot)}</span>
+<span style="font-size:.7rem;color:var(--t2)">${_usedPctC.toFixed(1)}% / Budget</span>
+</div>
+<div style="height:7px;background:var(--s3);border-radius:5px;margin:4px 0 8px;overflow:hidden"><div style="width:${Math.min(100,_usedPctC).toFixed(1)}%;height:100%;background:${_usedPctC>100?'var(--red)':_usedPctC>80?'var(--org)':'var(--acc)'};transition:.3s"></div></div>
+<div style="display:flex;justify-content:space-between;font-size:.78rem;padding:2px 0">
+<span style="color:var(--t2)">剩余 Budget</span><strong style="color:${_leftCeil<0?'var(--red)':'var(--grn)'}">${fm(_leftCeil)}</strong>
+</div>
+<div style="display:flex;justify-content:space-between;font-size:.78rem;padding:2px 0">
+<span style="color:var(--t2)">剩余计划</span><span style="color:${_leftPlan<0?'var(--red)':'var(--txt)'}">${fm(_leftPlan)}</span>
+</div>
+<div style="font-size:.72rem;color:var(--t2);padding:4px 0;border-top:1px solid var(--bdr);margin-top:4px">${_tripStatusTxt} · 剩 ${_remD} 天</div>
+<div style="display:flex;justify-content:space-between;font-size:.85rem;padding:4px 0;background:rgba(200,123,98,.08);border-radius:6px;padding:6px 10px;margin-top:4px">
+<span style="color:var(--t2);font-size:.78rem">💰 每日可花</span>
+<strong style="color:${_allowCol};font-size:.95rem">${fm(_dailyAllow)}/天</strong>
+</div>
+${_elapsed>0?`<div style="display:flex;justify-content:space-between;font-size:.7rem;padding:3px 0;color:var(--t2)"><span>已花日均</span><span>${fm(_dailyAct)}/天 · 计划 ${fm(_dailyPlan)}/天</span></div>`:`<div style="font-size:.7rem;color:var(--t2);padding:3px 0">计划日均 ${fm(_dailyPlan)}/天</div>`}
+</div></div></div>`;
 
 W.savings=`<div class="dw" data-wid="savings" draggable="true"><div class="c">
   <div class="ct" style="cursor:grab">⠿ 🏦 存款进度 — 存够就出发！</div>
