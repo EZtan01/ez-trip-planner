@@ -415,7 +415,7 @@ const ranked=Object.entries(cD).map(([c,d])=>({c,avg:d.d?Math.round(d.c/d.d):0,t
 const tdUndone=D.td.filter(x=>!x.dn);
 
 // Savings deadline warning
-const now=new Date();const depDate=new Date('2027-01-14');
+const now=new Date();const depDate=new Date((D.sd||'2027-01-04')+'T12:00:00');
 const msLeft=depDate-now;const daysLeft=Math.max(0,Math.ceil(msLeft/(1000*60*60*24)));
 const monthsLeft=Math.max(1,Math.ceil(daysLeft/30));
 const gap=Math.max(0,savNeed-D.sav);
@@ -800,7 +800,7 @@ let h=`<h2>💰 Budget 管理</h2>
 <div class="fr"><label>旅行月数</label><input type="number" value="${m}" disabled></div>
 </div>
 ${(()=>{const gap=all-avail;
-const depD=new Date('2027-01-14'),nowD=new Date();
+const depD=new Date((D.sd||'2027-01-04')+'T12:00:00'),nowD=new Date();
 const mLeft=Math.max(1,Math.ceil((depD-nowD)/(1000*60*60*24*30)));
 const needSave=Math.max(0,all-D.mi*m-D.sav);
 const perMonth=needSave>0?Math.ceil(needSave/mLeft):0;
@@ -1112,7 +1112,7 @@ const overB=D.stops.filter(s=>cc(s)>s.bg&&s.bg>0);
 const tdUn=D.td.filter(x=>!x.dn);
 let cards=[];
 if(all>D.bgt)cards.push({ico:'💸',tit:'超出Budget',col:'var(--red)',body:`预估 ${fm(all)} 超出 ${fm(D.bgt)} 共 <strong>${fm(all-D.bgt)}</strong>`});
-if(all>avail){const _dep=new Date('2027-01-14'),_now=new Date(),_mL=Math.max(1,Math.ceil((_dep-_now)/(1000*60*60*24*30))),_need=Math.max(0,all-D.mi*mo()-D.sav),_pm=_need>0?Math.ceil(_need/_mL):0;
+if(all>avail){const _dep=new Date((D.sd||'2027-01-04')+'T12:00:00'),_now=new Date(),_mL=Math.max(1,Math.ceil((_dep-_now)/(1000*60*60*24*30))),_need=Math.max(0,all-D.mi*mo()-D.sav),_pm=_need>0?Math.ceil(_need/_mL):0;
 cards.push({ico:'⚠️',tit:`资金缺口 ${fm(all-avail)}`,col:'var(--red)',body:`距出发${_mL}个月<br>每月需存 <strong>${fm(_pm)}</strong>`})}
 cards.push({ico:'🛂',tit:'申根',col:sd>80?'var(--red)':sd>60?'var(--org)':'var(--blu)',body:`累计 <strong>${sd}/90天</strong> 余${90-sd}天 ${sd>80?'⚠️接近上限！':''}`});
 if(unc.length)cards.push({ico:'❓',tit:`${unc.length}站未确认`,col:'var(--org)',body:unc.slice(0,6).map(s=>`• ${s.co}→${s.ci}`).join('<br>')+(unc.length>6?`<br>...+${unc.length-6}站`:'')});
