@@ -1,6 +1,6 @@
 // EZ Trip Planner — Service Worker
 // Stale-while-revalidate: serve cache instantly, update in background
-const CACHE_NAME = 'ez-trip-v5';
+const CACHE_NAME = 'ez-trip-v6';
 const ASSETS = [
   './',
   './index.html',
@@ -27,6 +27,9 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // Only handle http(s) requests — skip chrome-extension://, data:, etc.
+  if (!e.request.url.startsWith('http')) return;
+
   // Network-first for GitHub Gist API
   if (e.request.url.includes('api.github.com')) {
     e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
