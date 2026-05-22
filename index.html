@@ -139,6 +139,9 @@ h2{font-size:1.25rem;font-weight:800;margin-bottom:18px;color:var(--acc2)}
 
 .cal-day{min-height:58px;border-radius:8px;padding:4px 5px;font-size:.7rem;border:1px solid transparent;cursor:default;transition:.1s}
 .cal-day.has{cursor:pointer;border-color:var(--bdr)}.cal-day.has:hover{box-shadow:0 0 0 2px var(--acc)}
+.cal-pop{position:fixed;background:var(--s1);border:1px solid var(--bdr);border-radius:10px;padding:10px 12px;box-shadow:0 6px 20px rgba(0,0,0,.18);z-index:1000;font-size:.78rem;max-width:280px;min-width:200px;pointer-events:none;display:none;backdrop-filter:blur(10px);line-height:1.4}
+.cal-pop.show{display:block}
+@media(hover:none){.cal-pop{display:none!important}}
 .ez-pop .leaflet-popup-content-wrapper{border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.2);border:2px solid var(--acc)}
 .ez-pop .leaflet-popup-tip{border-top-color:var(--acc)}
 .ez-plane{z-index:9999!important}
@@ -160,6 +163,7 @@ h2{font-size:1.25rem;font-weight:800;margin-bottom:18px;color:var(--acc2)}
 <button class="nt" data-p="itinerary">行程</button>
 <button class="nt" data-p="calendar">日历</button>
 <button class="nt" data-p="budget">Budget</button>
+<button class="nt" data-p="actual">📒 记账</button>
 <button class="nt" data-p="checklist">Checklist</button>
 <button class="nt" data-p="notes">备註</button>
 <button class="nt" data-p="goals">目标</button>
@@ -171,6 +175,7 @@ h2{font-size:1.25rem;font-weight:800;margin-bottom:18px;color:var(--acc2)}
 <div class="pg" id="pg-itinerary"></div>
 <div class="pg" id="pg-calendar"></div>
 <div class="pg" id="pg-budget"></div>
+<div class="pg" id="pg-actual"></div>
 <div class="pg" id="pg-checklist"></div>
 <div class="pg" id="pg-notes"></div>
 <div class="pg" id="pg-goals"></div>
@@ -178,6 +183,7 @@ h2{font-size:1.25rem;font-weight:800;margin-bottom:18px;color:var(--acc2)}
 <div class="pg" id="pg-map"></div>
 <div class="pg" id="pg-currency"></div>
 <div class="mbg" id="modal"><div class="md" id="mc"></div></div>
+<div class="cal-pop" id="cal-pop"></div>
 <script>
 const CDB={'Nepal':['Kathmandu','Pokhara','Bandipur','Nagarkot','Chitwan'],'India':['New Delhi','Mumbai','Jaipur','Varanasi'],
 'China':['伊宁','乌鲁木齐','喀什','伊犁','深圳'],'Hong Kong':['Hong Kong'],'Macau':['Macau'],'Kazakhstan':['Almaty','Astana','Shymkent','Mangistau','Turkestan'],'Kyrgyzstan':['Bishkek','Karakol','Osh','Jyrgalan','Arslanbob'],
@@ -297,6 +303,19 @@ const NT0=[
 {id:4,t:'有用Apps',c:'Omio · GuruWalk · FlixBus · EurostarSnap\nSafetyWing · Bookaway',pin:false}
 ];
 const FX0=[{n:'JB房子',v:1500},{n:'保险',v:880},{n:'水电管理费',v:342},{n:'WiFi',v:95},{n:'Subscription',v:212.56},{n:'生活费',v:100}];
+const RATES={'MYR':1,'NPR':28.5,'INR':19.5,'KZT':103,'KGS':19.1,'GEL':0.58,'AMD':85,'BGN':0.39,'RON':1.02,'RSD':23.5,'EUR':0.21,'BAM':0.39,'TRY':8.3,'USD':0.23,'GBP':0.17,'MKD':12,'CNY':1.55,'HKD':1.7,'MOP':1.75,'AZN':0.39,'ALL':21,'CZK':5.1,'PLN':0.92};
+const CCY_NAMES={'MYR':'🇲🇾 RM Ringgit','NPR':'🇳🇵 NPR Rupee','INR':'🇮🇳 INR Rupee','KZT':'🇰🇿 KZT Tenge','KGS':'🇰🇬 KGS Som','GEL':'🇬🇪 GEL Lari','AMD':'🇦🇲 AMD Dram','BGN':'🇧🇬 BGN Lev','RON':'🇷🇴 RON Leu','RSD':'🇷🇸 RSD Dinar','EUR':'🇪🇺 EUR','BAM':'🇧🇦 BAM Mark','TRY':'🇹🇷 TRY Lira','USD':'🇺🇸 USD','GBP':'🇬🇧 GBP','MKD':'🇲🇰 MKD Denar','CNY':'🇨🇳 CNY','HKD':'🇭🇰 HKD','MOP':'🇲🇴 MOP','AZN':'🇦🇿 AZN','ALL':'🇦🇱 ALL Lek','CZK':'🇨🇿 CZK Koruna','PLN':'🇵🇱 PLN Zloty'};
+const CO_CCY={'Nepal':'NPR','India':'INR','Kazakhstan':'KZT','Kyrgyzstan':'KGS','Georgia':'GEL','Armenia':'AMD','Bulgaria':'BGN','Romania':'RON','Serbia':'RSD','Montenegro':'EUR','Bosnia':'BAM','Slovenia':'EUR','Austria':'EUR','Spain':'EUR','Portugal':'EUR','North Macedonia':'MKD','China':'CNY','Hong Kong':'HKD','Macau':'MOP','Azerbaijan':'AZN','Albania':'ALL','Italy':'EUR','Croatia':'EUR','Czech Republic':'CZK','Poland':'PLN','Malaysia':'MYR'};
+const EX_CATS_DEFAULT=[{k:'food',n:'🍽️ 餐饮',c:'#e89b7a'},{k:'stay',n:'🏠 住宿',c:'#7aa8c4'},{k:'tr',n:'🚀 城际交通',c:'#9a8aa5'},{k:'lt',n:'🚕 本地交通',c:'#a8c47a'},{k:'tick',n:'🎫 门票/活动',c:'#c4a87a'},{k:'oth',n:'📦 其他',c:'#b8a89a'}];
+function getExCats(){return [...EX_CATS_DEFAULT,...((D&&D.exCats)||[])]}
+function getExCat(k){return getExCats().find(c=>c.k===k)||{k,n:k,c:'#888'}}
+function rmFromLocal(amt,ccy){const r=RATES[ccy];return r?(amt/r):amt}
+function _exDate(d){return(D.ex||[]).filter(e=>e.date===d)}
+function _exTotalRm(arr){return(arr||D.ex||[]).reduce((a,e)=>a+(+e.rmAmt||0),0)}
+function _stopAt(d){if(!d)return null;for(const s of D.stops){if(s.standby||!s.date)continue;const sd=new Date(s.date+'T12:00:00'),ed=new Date(sd);ed.setDate(ed.getDate()+s.days);const t=new Date(d+'T12:00:00');if(t>=sd&&t<ed)return s}return null}
+function _stopDaysIn(s,from,to){if(!s.date||s.standby)return 0;if(!from&&!to)return s.days;const sd=new Date(s.date+'T12:00:00'),ed=new Date(sd);ed.setDate(ed.getDate()+s.days-1);let f=from?new Date(from+'T12:00:00'):sd,t=to?new Date(to+'T12:00:00'):ed;if(f<sd)f=sd;if(t>ed)t=ed;if(t<f)return 0;return Math.floor((t-f)/86400000)+1}
+function _stopCatPlanIn(s,from,to){const d=_stopDaysIn(s,from,to);const r=s.days?d/s.days:0;return{tr:(s.tc||0)*r,food:d*(s.food||0),stay:d*(s.stay||0),lt:d*(s.lt||0),tick:d*(s.tick||0),oth:(s.oth||0)*r}}
+function tdUrgency(dl){if(!dl)return null;const t=new Date();t.setHours(0,0,0,0);const d=new Date(dl+'T12:00:00');const diff=Math.floor((d-t)/86400000);const ds=fD(dl);if(diff<0)return{lbl:`过期${-diff}天 · ${ds}`,col:'var(--red)',sort:diff,bg:'rgba(217,90,79,.12)'};if(diff===0)return{lbl:`今天 · ${ds}`,col:'var(--red)',sort:0,bg:'rgba(217,90,79,.12)'};if(diff===1)return{lbl:`明天 · ${ds}`,col:'var(--org)',sort:1,bg:'rgba(200,123,98,.12)'};if(diff<=7)return{lbl:`${diff}天后 · ${ds}`,col:'var(--org)',sort:diff,bg:'rgba(200,123,98,.12)'};if(diff<=30)return{lbl:`${diff}天后 · ${ds}`,col:'#b8924a',sort:diff,bg:'rgba(196,168,122,.12)'};return{lbl:`${diff}天后 · ${ds}`,col:'var(--t2)',sort:diff,bg:'rgba(0,0,0,.04)'}}
 const PC0=[{n:'机票(已买)',v:4457.95,ok:true},{n:'衣服等等',v:1444,ok:false},{n:'杂费(驾照/疫苗/签证等)',v:988,ok:false},{n:'预备金',v:3500,ok:false}];
 const GL0=[
   {id:1,cat:'💪 健身',big:'增肌+体能提升',subs:[
@@ -329,6 +348,8 @@ const SAVED={"sd":"2027-01-04","bgt":90000,"sav":15000,"mi":5000,"stops":[{"id":
 function ld(){try{const s=localStorage.getItem(SK);D=s?JSON.parse(s):null}catch(e){D=null}
 if(!D)D=JSON.parse(JSON.stringify(SAVED));
 if(!D.sd)D.sd=SAVED.sd||'2027-01-04';if(!D.td)D.td=JSON.parse(JSON.stringify(TD0));if(!D.pc)D.pc=JSON.parse(JSON.stringify(PC0));if(!D.ro)D.ro={};if(!D.dwo)D.dwo=[...DWID];if(!D.gl)D.gl=JSON.parse(JSON.stringify(GL0));if(!D.glm)D.glm={};
+D.stops.forEach(s=>{if(!s.dp||typeof s.dp!=='object')s.dp={}});
+if(!Array.isArray(D.ex))D.ex=[];if(!Array.isArray(D.exCats))D.exCats=[];
 const _sv=JSON.parse(JSON.stringify(SAVED));const _have=new Set(D.stops.map(s=>s.id));let _patched=false;_sv.stops.forEach(ns=>{if(!_have.has(ns.id)){D.stops.push(JSON.parse(JSON.stringify(ns)));_patched=true}});_sv.stops.forEach(ns=>{const s=D.stops.find(x=>x.id===ns.id);if(s&&s.co!==ns.co){s.co=ns.co;_patched=true}});if(_patched){D.__ts=Date.now();localStorage.setItem(SK,JSON.stringify(D))}}
 function sv(){D.__ts=Date.now();localStorage.setItem(SK,JSON.stringify(D));if(typeof scheduleAutoSync==='function')scheduleAutoSync()}
 function fm(n){return n!=null&&!isNaN(n)?'RM '+Math.round(n).toLocaleString():'—'}
@@ -343,7 +364,7 @@ function fxM(){return D.fx.reduce((a,x)=>a+x.v,0)}
 function mo(){return Math.ceil(tDays()/30)||1}
 function tAll(){return tTrip()+tPre()+fxM()*mo()}
 function schD(){let d=0;D.stops.forEach(s=>{if(s.sch&&!s.standby)d+=s.days});return d}
-function recalc(){if(!D.stops.length)return;if(!D.sd)D.sd='2027-01-04';let d=new Date(D.sd+'T00:00:00');D.stops.forEach(s=>{if(s.standby){s.date='';return}s.date=d.toISOString().split('T')[0];d.setDate(d.getDate()+s.days)})}
+function recalc(){if(!D.stops.length)return;if(!D.sd)D.sd='2027-01-04';let d=new Date(D.sd+'T12:00:00');D.stops.forEach(s=>{if(s.standby){s.date='';return}const yy=d.getFullYear(),mm=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');s.date=yy+'-'+mm+'-'+dd;d.setDate(d.getDate()+s.days)})}
 function regOf(c){for(const r of REG)if(r.c.includes(c))return r.n;return'🌍 其他'}
 function getGroups(){const g=[];let lr=null;D.stops.forEach((s,i)=>{const r=regOf(s.co);if(r!==lr){g.push({r,stops:[]});lr=r}g[g.length-1].stops.push({...s,_i:i})});return g}
 function savingsNeeded(){return tAll()-D.mi*mo()}
@@ -432,10 +453,11 @@ ${ranked.map((r,i)=>`<div style="display:flex;align-items:center;gap:8px;padding
 <span style="min-width:35px;text-align:right;color:var(--t2);font-size:.75rem">${r.d}天</span>
 </div>`).join('')}</div></div></div>`;
 
+const tdSorted=[...tdUndone].sort((a,b)=>{const ua=tdUrgency(a.dl),ub=tdUrgency(b.dl);if(ua&&ub)return ua.sort-ub.sort;if(ua)return -1;if(ub)return 1;return b.id-a.id});
 W.todo=`<div class="dw" data-wid="todo" draggable="true"><div class="c"><div class="ct" style="cursor:grab">⠿ ⚠️ 待处理 (代办)</div><div class="ss">
-${tdUndone.length?tdUndone.map(t=>`<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--bdr);font-size:.82rem">
+${tdSorted.length?tdSorted.map(t=>{const u=tdUrgency(t.dl);return `<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--bdr);font-size:.82rem">
 <input type="checkbox" style="width:15px;height:15px;accent-color:var(--acc)" onchange="D.td.find(x=>x.id===${t.id}).dn=true;sv();R.dashboard()">
-<span>${t.it}</span></div>`).join(''):'<div style="padding:8px 0;font-size:.82rem;color:var(--grn)">✅ 所有代办已完成！</div>'}
+<span style="flex:1">${t.it}</span>${u?`<span style="font-size:.66rem;font-weight:700;color:${u.col};background:${u.bg};padding:2px 6px;border-radius:4px;flex-shrink:0">${u.lbl}</span>`:''}</div>`}).join(''):'<div style="padding:8px 0;font-size:.82rem;color:var(--grn)">✅ 所有代办已完成！</div>'}
 </div></div></div>`;
 
 // Render widgets in saved order
@@ -588,18 +610,116 @@ const dim=new Date(y,m+1,0).getDate();
 for(let d=1;d<=dim;d++){
 const key=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;const s=dm[key];
 const col=s?(CCOUNTRY[s.co]||'var(--acc)'):'transparent';
-h+=`<div class="cal-day ${s?'has':''}" style="background:${s?col+'18':'transparent'};border-color:${s?col+'40':'transparent'}" ${s?`onclick="calEdit(${s.id})"`:''}>
-<div style="font-weight:600;font-size:.7rem;color:var(--t2)">${d}</div>
+let ind='';if(s){const di=Math.round((new Date(key+'T12:00:00')-new Date(s.date+'T12:00:00'))/86400000);const dp=s.dp&&s.dp[di];if(dp){if(dp.st==='done')ind='✓';else if((dp.pl&&dp.pl.length)||dp.nt||(dp.me&&(dp.me.b||dp.me.l||dp.me.d)))ind='📝'}}
+h+=`<div class="cal-day ${s?'has':''}" style="background:${s?col+'18':'transparent'};border-color:${s?col+'40':'transparent'}" ${s?`onclick="calDayEdit('${key}')" onmouseenter="calDayPop(this,'${key}')" onmouseleave="calDayPopHide()"`:''}>
+<div style="display:flex;justify-content:space-between;align-items:center;line-height:1"><span style="font-weight:600;font-size:.7rem;color:var(--t2)">${d}</span>${ind?`<span style="font-size:.62rem;color:${ind==='✓'?'var(--grn)':'var(--acc2)'}">${ind}</span>`:''}</div>
 ${s?`<div style="font-weight:700;color:${col};font-size:.65rem;line-height:1.1">${s.ci}</div><div style="font-size:.6rem;color:var(--t2)">${gT(s)}</div>`:''}
 ${FEST[key]&&FEST[key].co===getCoOnDate(key)?`<div style="font-size:.55rem;color:var(--org);font-weight:700;line-height:1" title="${FEST[key].e}">🎪${FEST[key].n.substring(0,8)}</div>`:''}</div>`;
 }h+=`</div></div>`;cur=new Date(y,m+1,1)}
 el.innerHTML=h;
 };
-window.calEdit=id=>{const s=D.stops.find(x=>x.id===id);const idx=D.stops.indexOf(s);
-openM(`<h3>编辑 ${s.co}·${s.ci}</h3>${sForm(s,'ce')}
-<div class="ma"><button class="btn bs" onclick="closeM()">取消</button>
-<button class="btn bp" onclick="const f=rForm('ce');Object.assign(D.stops[${idx}],f);recalc();sv();closeM();R.calendar()">保存</button></div>`);
+window._cdpGet=key=>{let s=null;for(const st of D.stops){if(st.standby||!st.date)continue;const sd=new Date(st.date+'T12:00:00'),ed=new Date(sd);ed.setDate(ed.getDate()+st.days);const td=new Date(key+'T12:00:00');if(td>=sd&&td<ed){s=st;break}}if(!s)return null;const di=Math.round((new Date(key+'T12:00:00')-new Date(s.date+'T12:00:00'))/86400000);if(!s.dp)s.dp={};if(!s.dp[di])s.dp[di]={};return{s,di,dp:s.dp[di]}};
+window.calDayPop=(el,key)=>{const r=_cdpGet(key);if(!r)return;const{s,di,dp}=r;
+const esc=t=>(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const todayEx=_exDate(key),todayTot=_exTotalRm(todayEx);
+const dateLbl=new Date(key+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+let html=`<div style="font-weight:700;color:${CCOUNTRY[s.co]||'var(--acc)'};font-size:.82rem">${dateLbl}</div>
+<div style="font-size:.7rem;color:var(--t2);margin-bottom:6px">Day ${di+1}/${s.days} · ${esc(s.ci)}, ${esc(s.co)}</div>`;
+if(dp.st==='done')html+=`<div style="color:var(--grn);font-size:.7rem;margin-bottom:4px;font-weight:600">✓ 已完成</div>`;
+if(dp.nt)html+=`<div style="font-size:.72rem;margin-bottom:4px;color:var(--txt);background:rgba(0,0,0,.04);padding:4px 6px;border-radius:5px">📝 ${esc(dp.nt.substring(0,100))}${dp.nt.length>100?'…':''}</div>`;
+if(dp.pl&&dp.pl.length){html+=`<div style="font-weight:600;font-size:.7rem;margin-top:4px">📍 ${dp.pl.length} 个景点</div>`;html+=dp.pl.slice(0,5).map(p=>`<div style="font-size:.7rem;padding:1px 0;color:var(--t2)">• ${esc(p.n)}</div>`).join('');if(dp.pl.length>5)html+=`<div style="font-size:.66rem;color:var(--t2);font-style:italic">+${dp.pl.length-5} more...</div>`}
+if(todayEx.length){const foodEx=todayEx.filter(e=>e.cat==='food'),mealsTot=foodEx.reduce((a,e)=>a+(+e.rmAmt||0),0);html+=`<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--bdr);font-size:.72rem"><strong style="color:var(--acc2)">💸 RM ${todayTot.toFixed(2)}</strong> · ${todayEx.length} 笔${foodEx.length?` (🍽️ RM ${mealsTot.toFixed(2)})`:''}</div>`}
+if(!dp.nt&&!(dp.pl&&dp.pl.length)&&!todayEx.length&&dp.st!=='done')html+=`<div style="font-size:.7rem;color:var(--t2);font-style:italic;margin-top:4px">(暂无安排)</div>`;
+html+=`<div style="font-size:.64rem;color:var(--t2);margin-top:6px;border-top:1px solid var(--bdr);padding-top:4px;text-align:center">点击编辑</div>`;
+const pop=document.getElementById('cal-pop');pop.innerHTML=html;
+const rect=el.getBoundingClientRect();
+let left=rect.right+8,top=rect.top;
+if(left+280>window.innerWidth)left=rect.left-280-8;
+if(left<8)left=8;
+if(top+260>window.innerHeight)top=Math.max(8,window.innerHeight-260-8);
+pop.style.left=left+'px';pop.style.top=top+'px';pop.classList.add('show')};
+window.calDayPopHide=()=>{const p=document.getElementById('cal-pop');if(p)p.classList.remove('show')};
+window.calDayEdit=key=>{const r=_cdpGet(key);if(!r)return;const{s,di,dp}=r;
+const dateLabel=new Date(key+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+const done=dp.st==='done';const me=dp.me||{};
+const placesHtml=(dp.pl&&dp.pl.length)?dp.pl.map((p,pi)=>`<div class="pi"><span style="color:var(--acc);flex-shrink:0">•</span><div style="flex:1"><strong>${p.n||''}</strong>${p.r?` <span style="color:var(--t2)">— ${p.r}</span>`:''}</div><button class="bg" onclick="cdEPl('${key}',${pi})">✏️</button><button class="bg" style="color:var(--red)" onclick="cdRPl('${key}',${pi})">×</button></div>`).join(''):'<div style="font-size:.72rem;color:var(--t2);padding:6px 0">暂无安排</div>';
+openM(`<h3 style="margin-bottom:4px">📅 ${dateLabel}</h3>
+<div style="font-size:.78rem;color:var(--t2);margin-bottom:14px">Day ${di+1} / ${s.days} · <strong style="color:${CCOUNTRY[s.co]||'var(--acc)'}">${s.ci}, ${s.co}</strong></div>
+<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+<button class="btn bsm" style="background:${done?'var(--grn)':'var(--org)'};color:#fff" onclick="cdTog('${key}')">${done?'✓ 已完成':'⏳ 已计划'}</button>
+<span style="font-size:.7rem;color:var(--t2)">点击切换状态</span></div>
+<div class="fr"><label>📝 今日备注</label><textarea style="min-height:60px" placeholder="休息日 / 重要事项 / 心情..." onchange="cdSv('${key}','nt',this.value)">${dp.nt||''}</textarea></div>
+${(()=>{const stopHere=_stopAt(key);const defCcy=(stopHere&&CO_CCY[stopHere.co])||'MYR';const foodEx=_exDate(key).filter(e=>e.cat==='food');const mealRow=(name,icon,tm)=>{const matches=foodEx.filter(e=>e.time===tm);const existing=matches[0];const desc=existing?existing.desc:'';const amt=existing?existing.localAmt:'';const ccy=existing?existing.localCcy:defCcy;const rm=existing?(+existing.rmAmt||0):0;const extra=matches.length>1?` <span style="font-size:.62rem;color:var(--t2);font-weight:400">+${matches.length-1}</span>`:'';return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+<span style="font-size:.78rem;font-weight:600;width:46px;flex-shrink:0">${icon} ${name}${extra}</span>
+<input id="ml-desc-${tm}" placeholder="吃了什么(可留空)" value="${(desc||'').replace(/"/g,'&quot;')}" onchange="cdMlSv('${key}','${tm}','${defCcy}')" style="flex:1;min-width:70px;font-size:.82rem">
+<input id="ml-amt-${tm}" type="number" step="0.01" placeholder="0" value="${amt||''}" oninput="cdMlPv('${tm}','${ccy}')" onchange="cdMlSv('${key}','${tm}','${defCcy}')" style="width:62px;font-size:.82rem;text-align:right">
+<span style="font-size:.66rem;color:var(--t2);min-width:28px;text-align:left">${ccy}</span>
+<span id="mlrm-${tm}" style="font-size:.7rem;color:var(--acc2);font-weight:700;min-width:64px;text-align:right">${rm?'≈ RM '+rm.toFixed(2):'—'}</span>
+</div>`};return `<div class="fr"><label>🍽️ 餐食 <span style="font-weight:400;color:var(--t2);font-size:.7rem">填了就自动记账 (cat=食)</span></label>
+${mealRow('早','🌅','M')}${mealRow('午','☀️','A')}${mealRow('晚','🌙','E')}
+</div>`})()}
+<div class="fr"><label>📍 今日去哪玩</label>
+<div style="margin-bottom:6px">${placesHtml}</div>
+<button class="btn bs bsm" onclick="cdAPl('${key}')">+ 景点</button></div>
+${(()=>{const todayEx=_exDate(key);const todayTot=_exTotalRm(todayEx);const planDaily=s.days?(((s.food||0)+(s.stay||0)+(s.lt||0)+(s.tick||0))):0;const exEsc=t=>(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');let exHtml='';if(todayEx.length){exHtml=todayEx.map(e=>{const c=getExCat(e.cat);const tmIc=e.time==='M'?'🌅':e.time==='A'?'☀️':e.time==='E'?'🌙':'';return `<div class="pi" style="border-bottom-color:rgba(195,178,165,.18)"><span style="background:${c.c}22;color:${c.c};padding:2px 6px;border-radius:5px;font-size:.66rem;font-weight:700;flex-shrink:0">${c.n}</span><div style="flex:1;font-size:.78rem">${tmIc}${tmIc?' ':''}${exEsc(e.desc)||'<span style="color:var(--t2)">(无描述)</span>'}</div><div style="text-align:right;font-size:.72rem;flex-shrink:0"><div style="font-weight:700;color:var(--acc2)">RM ${(+e.rmAmt||0).toFixed(2)}</div>${e.localCcy!=='MYR'?`<div style="color:var(--t2);font-size:.66rem">${e.localAmt} ${e.localCcy}</div>`:''}</div><button class="bg" onclick="exEdit(${e.id},'${key}')">✏️</button><button class="bg" style="color:var(--red)" onclick="exDel(${e.id},'${key}')">×</button></div>`}).join('')}else{exHtml=`<div style="font-size:.72rem;color:var(--t2);padding:6px 0">还没记账</div>`}return `<div class="fr"><label>💸 今日花费 <span style="font-weight:700;color:var(--acc2)">RM ${todayTot.toFixed(2)}</span>${planDaily?` <span style="color:var(--t2);font-weight:400">/ 计划日均 RM ${planDaily.toFixed(0)}</span>`:''}</label>
+<div style="margin-bottom:6px">${exHtml}</div>
+<button class="btn bs bsm" onclick="exAdd('${key}','${key}')">+ 记一笔</button></div>`})()}
+<div style="font-size:.68rem;color:var(--t2);margin-top:14px;padding:8px 10px;background:rgba(0,0,0,.04);border-radius:6px;line-height:1.4;display:flex;align-items:center;gap:8px;flex-wrap:wrap">💡 这里只编辑<strong>这一天</strong>。改天数/budget/住宿：<button class="btn bs bsm" onclick="cdEditStop('${key}')">🗓️ 编辑这站</button></div>
+<div class="ma"><button class="btn bp" onclick="closeM();R.calendar()">完成</button></div>`)};
+window.cdTog=key=>{const r=_cdpGet(key);if(!r)return;r.dp.st=r.dp.st==='done'?'planned':'done';sv();calDayEdit(key)};
+window.cdSv=(key,field,val)=>{const r=_cdpGet(key);if(!r)return;r.dp[field]=val;sv()};
+window.cdSvMe=(key,m,val)=>{const r=_cdpGet(key);if(!r)return;if(!r.dp.me)r.dp.me={};r.dp.me[m]=val;sv()};
+window.cdAPl=key=>{const r=_cdpGet(key);if(!r)return;const s=r.s;const todayPl=r.dp.pl||[];const stopPl=s.pl||[];
+const esc=t=>(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+let pickerHtml='';
+if(stopPl.length){pickerHtml=`<div class="fr"><label>从 ${esc(s.ci)} 的景点池选 <span style="font-weight:400;color:var(--t2)">(点击加入今天)</span></label>
+<div style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto;padding:5px;background:rgba(0,0,0,.03);border-radius:6px">
+${stopPl.map((p,si)=>{const already=todayPl.some(t=>t.n===p.n);return `<button class="btn bs" style="text-align:left;font-size:.78rem;padding:7px 10px;line-height:1.3;opacity:${already?'.45':'1'}" onclick="cdPickPl('${key}',${si})"><strong>${already?'✓ ':'+ '}${esc(p.n)}</strong>${p.r?` <span style="color:var(--t2);font-size:.7rem">— ${esc(p.r)}</span>`:''}</button>`}).join('')}
+</div></div>`}else{pickerHtml=`<div style="font-size:.72rem;color:var(--t2);margin-bottom:12px;padding:8px 10px;background:rgba(0,0,0,.03);border-radius:6px;line-height:1.4">这站还没添加任何景点。在 🗓️ 行程 tab（或下方「编辑这站」）添加后，会自动出现在这里。</div>`}
+openM(`<h3>+ 今日景点</h3>
+${pickerHtml}
+<div style="text-align:center;font-size:.72rem;color:var(--t2);margin:10px 0">— 或自定义 —</div>
+<div class="fg"><div class="fr"><label>名称</label><input id="cdpn"></div><div class="fr"><label>备注</label><input id="cdpr"></div></div>
+<div class="ma"><button class="btn bs" onclick="calDayEdit('${key}')">取消</button>
+<button class="btn bp" onclick="const r=_cdpGet('${key}');if(r){const n=document.getElementById('cdpn').value.trim();if(n){if(!r.dp.pl)r.dp.pl=[];r.dp.pl.push({n,r:document.getElementById('cdpr').value});sv();calDayEdit('${key}')}else{calDayEdit('${key}')}}">添加自定义</button></div>`)};
+window.cdPickPl=(key,si)=>{const r=_cdpGet(key);if(!r)return;const p=r.s.pl&&r.s.pl[si];if(!p)return;if(!r.dp.pl)r.dp.pl=[];r.dp.pl.push({n:p.n,r:p.r||''});sv();cdAPl(key)};
+window.cdEditStop=key=>{const r=_cdpGet(key);if(!r)return;const s=r.s;const idx=D.stops.indexOf(s);
+openM(`<h3>🗓️ 编辑这站 · ${s.co}·${s.ci}</h3>${sForm(s,'ce')}
+<div class="ma"><button class="btn bs" onclick="calDayEdit('${key}')">取消</button>
+<button class="btn bp" onclick="const f=rForm('ce');Object.assign(D.stops[${idx}],f);recalc();sv();calDayEdit('${key}')">保存</button></div>`);
 document.getElementById('ceci').onchange=()=>{document.getElementById('cecic').style.display=document.getElementById('ceci').value==='__'?'block':'none'}};
+window.cdEPl=(key,pi)=>{const r=_cdpGet(key);if(!r||!r.dp.pl||!r.dp.pl[pi])return;const p=r.dp.pl[pi];
+openM(`<h3>编辑景点</h3><div class="fr"><label>名称</label><input id="cdpn" value="${(p.n||'').replace(/"/g,'&quot;')}"></div><div class="fr"><label>备注</label><input id="cdpr" value="${(p.r||'').replace(/"/g,'&quot;')}"></div>
+<div class="ma"><button class="btn bs" onclick="calDayEdit('${key}')">取消</button>
+<button class="btn bp" onclick="const r=_cdpGet('${key}');if(r&&r.dp.pl){r.dp.pl[${pi}]={n:document.getElementById('cdpn').value,r:document.getElementById('cdpr').value};sv();calDayEdit('${key}')}">保存</button></div>`)};
+window.cdRPl=(key,pi)=>{if(!confirm('删除这个景点?'))return;const r=_cdpGet(key);if(!r||!r.dp.pl)return;r.dp.pl.splice(pi,1);sv();calDayEdit(key)};
+// ============ EXPENSE TRACKING ============
+window._exReturn=ret=>{if(ret&&/^\d{4}-\d{2}-\d{2}$/.test(ret))calDayEdit(ret);else if(typeof R.actual==='function')R.actual()};
+window.exAdd=(date,ret)=>{const today=new Date();const td=date||(today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0'));const stop=_stopAt(td);const defCcy=(stop&&CO_CCY[stop.co])||'MYR';exMo('',{date:td,cat:'food',desc:'',localCcy:defCcy,localAmt:'',time:''},ret||'')};
+window.exAddMeal=(date,time,ret)=>{const stop=_stopAt(date);const defCcy=(stop&&CO_CCY[stop.co])||'MYR';exMo('',{date,cat:'food',desc:'',localCcy:defCcy,localAmt:'',time},ret||'')};
+window.cdMlPv=(tm,ccy)=>{const a=document.getElementById('ml-amt-'+tm);if(!a)return;const amt=+a.value||0;const rm=rmFromLocal(amt,ccy);const el=document.getElementById('mlrm-'+tm);if(el)el.textContent=rm?'≈ RM '+rm.toFixed(2):'—'};
+window.cdMlSv=(key,tm,defCcy)=>{const descEl=document.getElementById('ml-desc-'+tm);const amtEl=document.getElementById('ml-amt-'+tm);if(!descEl||!amtEl)return;const desc=descEl.value.trim();const amt=+amtEl.value||0;const matches=D.ex.filter(e=>e.date===key&&e.cat==='food'&&e.time===tm);const existing=matches[0];if(!desc&&!amt){if(existing){D.ex=D.ex.filter(x=>x.id!==existing.id);sv()}return}const ccy=(existing&&existing.localCcy)||defCcy||'MYR';const rmAmt=rmFromLocal(amt,ccy);if(existing){Object.assign(existing,{desc,localAmt:amt,rmAmt})}else{D.ex.push({id:Date.now(),date:key,cat:'food',desc,localCcy:ccy,localAmt:amt,rmAmt,time:tm})}sv();const rmEl=document.getElementById('mlrm-'+tm);if(rmEl)rmEl.textContent=rmAmt?'≈ RM '+rmAmt.toFixed(2):'—'};
+window.exEdit=(id,ret)=>{const e=D.ex.find(x=>x.id==id);if(!e)return;exMo(id,e,ret||'')};
+window.exDel=(id,ret)=>{if(!confirm('删除这笔记账?'))return;const i=D.ex.findIndex(x=>x.id==id);if(i>=0){D.ex.splice(i,1);sv();_exReturn(ret)}};
+window.exMo=(id,e,ret)=>{const esc=t=>(t==null?'':(''+t)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const catOpts=getExCats().map(c=>`<option value="${c.k}" ${c.k===e.cat?'selected':''}>${c.n}</option>`).join('')+'<option value="__add">+ 新增自定义类别...</option>';
+const ccyOpts=Object.keys(RATES).map(c=>`<option value="${c}" ${c===e.localCcy?'selected':''}>${CCY_NAMES[c]||c}</option>`).join('');
+const timeOpts=`<option value="" ${!e.time?'selected':''}>—</option><option value="M" ${e.time==='M'?'selected':''}>🌅 早</option><option value="A" ${e.time==='A'?'selected':''}>☀️ 午</option><option value="E" ${e.time==='E'?'selected':''}>🌙 晚</option>`;
+openM(`<h3>${id?'✏️ 编辑':'💸 +'} 记一笔</h3>
+<div class="fg"><div class="fr"><label>日期</label><input id="exd" type="date" value="${e.date||''}"></div>
+<div class="fr"><label>时段(可选)</label><select id="extm">${timeOpts}</select></div></div>
+<div class="fr"><label>类别</label><select id="exc" onchange="exCatChg(this)">${catOpts}</select></div>
+<div class="fr"><label>描述</label><input id="exdesc" placeholder="早餐街边面 / 旅馆 / 出租车..." value="${esc(e.desc)}"></div>
+<div class="fg" style="grid-template-columns:1.4fr 1fr"><div class="fr"><label>货币</label><select id="exccy" onchange="exPv()">${ccyOpts}</select></div>
+<div class="fr"><label>金额(当地)</label><input id="examt" type="number" step="0.01" value="${e.localAmt||''}" oninput="exPv()" placeholder="0"></div></div>
+<div id="expv" style="font-size:.85rem;color:var(--acc2);text-align:right;margin:-4px 4px 8px;font-weight:600">≈ RM 0.00</div>
+<div class="ma">${id?`<button class="btn bd" style="margin-right:auto" onclick="exDel('${id}','${ret}')">删除</button>`:''}<button class="btn bs" onclick="closeM();_exReturn('${ret}')">取消</button>
+<button class="btn bp" onclick="exSave('${id}','${ret}')">保存</button></div>`);
+setTimeout(exPv,10)};
+window.exPv=()=>{const a=document.getElementById('examt');if(!a)return;const amt=+a.value||0;const ccy=document.getElementById('exccy').value;const rm=rmFromLocal(amt,ccy);document.getElementById('expv').textContent='≈ RM '+rm.toFixed(2)};
+window.exCatChg=sel=>{if(sel.value!=='__add')return;const n=prompt('新类别名称(可加 emoji，如 🛍️ 购物 或 🍻 社交):');if(!n||!n.trim()){sel.value=getExCats()[0].k;return}const k='c'+Date.now();if(!D.exCats)D.exCats=[];D.exCats.push({k,n:n.trim(),c:'#a89aa5'});sv();const opts=getExCats().map(c=>`<option value="${c.k}" ${c.k===k?'selected':''}>${c.n}</option>`).join('')+'<option value="__add">+ 新增自定义类别...</option>';sel.innerHTML=opts};
+window.exSave=(id,ret)=>{const date=document.getElementById('exd').value;const cat=document.getElementById('exc').value;if(cat==='__add'){alert('请先选择类别');return}const desc=document.getElementById('exdesc').value.trim();const localCcy=document.getElementById('exccy').value;const localAmt=+document.getElementById('examt').value||0;const time=document.getElementById('extm').value;if(!localAmt){alert('请输入金额');return}if(!date){alert('请选择日期');return}const rmAmt=rmFromLocal(localAmt,localCcy);if(id){const e=D.ex.find(x=>x.id==id);if(e)Object.assign(e,{date,cat,desc,localCcy,localAmt,rmAmt,time})}else{D.ex.push({id:Date.now(),date,cat,desc,localCcy,localAmt,rmAmt,time})}sv();closeM();_exReturn(ret)};
+window.exDelCat=k=>{const i=D.exCats.findIndex(c=>c.k===k);if(i<0)return;const used=D.ex.filter(e=>e.cat===k).length;if(used&&!confirm('有 '+used+' 笔记账用了这个类别，删除会让它们变成「其他」。继续?'))return;if(used)D.ex.forEach(e=>{if(e.cat===k)e.cat='oth'});D.exCats.splice(i,1);sv();R.actual()};
 
 // ============ BUDGET ============
 R.budget=function(){
@@ -687,6 +807,138 @@ ${D.fx.map((f,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:4
 el.innerHTML=h;
 };
 
+// ============ ACTUAL EXPENSE TRACKING ============
+let _acView='cat',_acFrom='',_acTo='',_acFCat='';
+R.actual=function(){
+const el=document.getElementById('pg-actual');
+const exEsc=t=>(t==null?'':(''+t)).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const planTot=tAll(),planTrip=tTrip();
+const actTot=_exTotalRm(D.ex);
+const usedPct=planTot?(actTot/planTot)*100:0;
+const today=new Date();const sd0=new Date((D.sd||'2027-01-04')+'T12:00:00');
+const totalDays=tDays();
+const daysSinceStart=Math.floor((today-sd0)/86400000)+1;
+const tripStatus=today<sd0?`距出发 ${Math.ceil((sd0-today)/86400000)} 天`:daysSinceStart>totalDays?`旅程已结束 · 共 ${totalDays} 天`:`旅行第 ${daysSinceStart} / ${totalDays} 天`;
+
+let h=`<h2>📒 记账 <span style="font-size:.78rem;color:var(--t2);font-weight:400">实际 vs 计划</span></h2>`;
+
+// === Stats header ===
+h+=`<div class="c"><div class="g3" style="gap:10px">
+<div class="st" style="background:var(--s2);padding:10px;border-radius:10px;text-align:center"><div class="sl">总计划</div><div class="sv" style="color:var(--acc)">${fm(planTot)}</div></div>
+<div class="st" style="background:var(--s2);padding:10px;border-radius:10px;text-align:center"><div class="sl">已实际</div><div class="sv" style="color:var(--acc2)">${fm(actTot)}</div></div>
+<div class="st" style="background:var(--s2);padding:10px;border-radius:10px;text-align:center"><div class="sl">${actTot>planTot?'超出':'剩余'}</div><div class="sv" style="color:${actTot>planTot?'var(--red)':'var(--grn)'}">${fm(Math.abs(planTot-actTot))}</div></div></div>
+<div style="height:8px;background:var(--s3);border-radius:5px;margin-top:10px;overflow:hidden"><div style="width:${Math.min(100,usedPct).toFixed(1)}%;height:100%;background:${usedPct>100?'var(--red)':usedPct>80?'var(--org)':'var(--acc)'};transition:.3s"></div></div>
+<div style="font-size:.78rem;color:var(--t2);margin-top:6px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px"><span>${tripStatus}</span><span>已记 <strong>${D.ex.length}</strong> 笔 · 用了 <strong>${usedPct.toFixed(1)}%</strong></span></div>
+<div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn bp" onclick="exAdd('','actual')">💸 + 记一笔</button>${D.ex.length?`<button class="btn bs bsm" onclick="exExportMd()">📋 复制 Summary</button><button class="btn bs bsm" onclick="exExportCsv()">📤 导出 CSV</button>`:''}</div></div>`;
+
+// === Comparison (always full-trip data) ===
+const views={cat:'按类别',city:'按城市',co:'按国家',mo:'按月'};
+h+=`<div class="c"><div class="ct">📊 Plan vs Actual</div>
+<div style="display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap">${Object.keys(views).map(v=>`<button class="btn ${_acView===v?'bp':'bs'} bsm" onclick="acSetView('${v}')">${views[v]}</button>`).join('')}</div>`;
+
+// Build comparison rows
+let rows=[];
+if(_acView==='cat'){
+  const m={};getExCats().forEach(c=>m[c.k]={plan:0,actual:0,name:c.n,col:c.c});
+  D.stops.forEach(s=>{if(s.standby)return;m.tr.plan+=(s.tc||0);m.food.plan+=s.days*(s.food||0);m.stay.plan+=s.days*(s.stay||0);m.lt.plan+=s.days*(s.lt||0);m.tick.plan+=s.days*(s.tick||0);m.oth.plan+=(s.oth||0)});
+  D.ex.forEach(e=>{if(!m[e.cat])m[e.cat]={plan:0,actual:0,name:getExCat(e.cat).n,col:getExCat(e.cat).c};m[e.cat].actual+=(+e.rmAmt||0)});
+  rows=Object.keys(m).map(k=>({k,n:m[k].name,c:m[k].col,plan:m[k].plan,act:m[k].actual}));
+}else if(_acView==='city'){
+  const m={};D.stops.forEach(s=>{if(s.standby)return;const k=s.ci+'·'+s.co;if(!m[k])m[k]={n:s.ci,sub:s.co,c:CCOUNTRY[s.co]||'var(--acc)',plan:0,act:0,days:0};m[k].days+=s.days;m[k].plan+=cc(s)});
+  D.ex.forEach(e=>{const s=_stopAt(e.date);if(s){const k=s.ci+'·'+s.co;if(m[k])m[k].act+=(+e.rmAmt||0)}});
+  rows=Object.values(m);
+}else if(_acView==='co'){
+  const m={};D.stops.forEach(s=>{if(s.standby)return;if(!m[s.co])m[s.co]={n:s.co,c:CCOUNTRY[s.co]||'var(--acc)',plan:0,act:0,days:0};m[s.co].days+=s.days;m[s.co].plan+=cc(s)});
+  D.ex.forEach(e=>{const s=_stopAt(e.date);if(s&&m[s.co])m[s.co].act+=(+e.rmAmt||0)});
+  rows=Object.values(m);
+}else if(_acView==='mo'){
+  const m={};D.stops.forEach(s=>{if(s.standby||!s.date)return;const dp=s.days?cc(s)/s.days:0;const sd=new Date(s.date+'T12:00:00');for(let i=0;i<s.days;i++){const dt=new Date(sd);dt.setDate(sd.getDate()+i);const k=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');if(!m[k])m[k]={n:k,c:'var(--acc)',plan:0,act:0};m[k].plan+=dp}});
+  D.ex.forEach(e=>{const k=e.date.substring(0,7);if(!m[k])m[k]={n:k,c:'var(--acc)',plan:0,act:0};m[k].act+=(+e.rmAmt||0)});
+  rows=Object.keys(m).sort().map(k=>m[k]);
+}
+
+if(!rows.length){h+=`<div style="font-size:.82rem;color:var(--t2);padding:10px">还没数据</div>`}else{
+h+=`<div style="overflow-x:auto"><table class="bt" style="font-size:.78rem"><thead><tr><th style="text-align:left">名称</th><th>计划</th><th>实际</th><th>差额</th><th>%</th></tr></thead><tbody>`;
+rows.forEach(r=>{
+  const diff=r.act-r.plan;const pct=r.plan?(r.act/r.plan*100):(r.act?999:0);
+  const diffCol=diff>0?'var(--red)':diff<0&&r.act>0?'var(--grn)':'var(--t2)';
+  h+=`<tr><td style="text-align:left"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${r.c};margin-right:6px;vertical-align:middle"></span><strong>${exEsc(r.n)}</strong>${r.sub?` <span style="color:var(--t2);font-size:.7rem">${exEsc(r.sub)}</span>`:''}${r.days?` <span style="color:var(--t2);font-size:.7rem">${r.days}天</span>`:''}</td>
+<td>${fm(r.plan)}</td><td style="color:var(--acc2);font-weight:700">${fm(r.act)}</td>
+<td style="color:${diffCol}">${diff>0?'+':''}${fm(diff)}</td>
+<td><div style="display:inline-block;width:50px;height:5px;background:var(--s3);border-radius:3px;vertical-align:middle;overflow:hidden"><div style="width:${Math.min(100,pct).toFixed(0)}%;height:100%;background:${pct>100?'var(--red)':pct>80?'var(--org)':'var(--grn)'}"></div></div> <span style="font-size:.7rem;color:var(--t2)">${pct.toFixed(0)}%</span></td></tr>`;
+});
+h+=`</tbody></table></div>`}
+h+=`</div>`;
+
+// === Entries list ===
+const entries=[...D.ex].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.id-a.id));
+const filtered=entries.filter(e=>{if(_acFrom&&e.date<_acFrom)return false;if(_acTo&&e.date>_acTo)return false;if(_acFCat&&e.cat!==_acFCat)return false;return true});
+const filtTot=_exTotalRm(filtered);
+const hasFilter=!!(_acFrom||_acTo||_acFCat);
+h+=`<div class="c"><div class="ct">📝 明细 <span style="font-weight:400;color:var(--t2);font-size:.78rem">(${filtered.length}/${entries.length} 笔 · RM ${filtTot.toFixed(2)})</span></div>
+<div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;flex-wrap:wrap">
+<span style="font-size:.72rem;color:var(--t2)">📅</span>
+<input type="date" value="${_acFrom}" onchange="acFilter('from',this.value)" style="font-size:.78rem">
+<span style="color:var(--t2);font-size:.78rem">→</span>
+<input type="date" value="${_acTo}" onchange="acFilter('to',this.value)" style="font-size:.78rem">
+<span style="font-size:.72rem;color:var(--t2);margin-left:6px">类别:</span>
+<select onchange="acFilter('cat',this.value)" style="font-size:.78rem;max-width:160px"><option value="">全部</option>${getExCats().map(c=>`<option value="${c.k}" ${_acFCat===c.k?'selected':''}>${c.n}</option>`).join('')}</select>
+${hasFilter?`<button class="btn bs bsm" style="margin-left:auto" onclick="acFilter('clear','')">✕ 清除筛选</button>`:''}</div>`;
+if(!filtered.length){h+=`<div style="font-size:.82rem;color:var(--t2);padding:10px;text-align:center;background:var(--s2);border-radius:8px">${entries.length?'当前筛选下没有记录':'还没记账。点上面「💸 + 记一笔」开始。'}</div>`}else{
+h+=`<div style="max-height:340px;overflow-y:auto;border:1px solid var(--bdr);border-radius:8px;padding:8px;background:var(--s2)">`;
+let lastDate='';
+filtered.forEach(e=>{
+  if(e.date!==lastDate){const stop=_stopAt(e.date);h+=`<div style="font-size:.72rem;color:var(--t2);background:rgba(0,0,0,.05);padding:4px 8px;border-radius:5px;margin:8px 0 4px;font-weight:600;position:sticky;top:0;backdrop-filter:blur(4px);z-index:1">${e.date}${stop?` · ${stop.ci}, ${stop.co}`:''}</div>`;lastDate=e.date}
+  const c=getExCat(e.cat);const tm=e.time==='M'?'🌅':e.time==='A'?'☀️':e.time==='E'?'🌙':'';
+  h+=`<div class="pi" style="cursor:pointer" onclick="exEdit(${e.id},'actual')"><span style="background:${c.c}22;color:${c.c};padding:2px 6px;border-radius:5px;font-size:.66rem;font-weight:700;flex-shrink:0">${c.n}</span><div style="flex:1;font-size:.82rem">${tm}${tm?' ':''}${exEsc(e.desc)||'<span style="color:var(--t2)">(无描述)</span>'}</div><div style="text-align:right;font-size:.78rem;flex-shrink:0"><div style="font-weight:700;color:var(--acc2)">RM ${(+e.rmAmt||0).toFixed(2)}</div>${e.localCcy!=='MYR'?`<div style="color:var(--t2);font-size:.66rem">${e.localAmt} ${e.localCcy}</div>`:''}</div><button class="bg" style="color:var(--red)" onclick="event.stopPropagation();exDel(${e.id},'actual')">×</button></div>`;
+});
+h+=`</div><div style="font-size:.68rem;color:var(--t2);text-align:center;margin-top:6px">↕️ 上下滑动查看更多 · 点行编辑</div>`}h+=`</div>`;
+
+// === Compact Trip Summary ===
+let sumTotPlan=0,sumTotAct=0;
+h+=`<div class="c"><div class="ct">📋 旅程 Summary <span style="font-weight:400;color:var(--t2);font-size:.78rem">完整概览</span></div>
+<div style="overflow-x:auto"><table class="bt" style="font-size:.78rem"><thead><tr><th>#</th><th>日期</th><th>城市</th><th>国家</th><th>天</th><th>交通</th><th>计划</th><th>实际</th><th>差额</th></tr></thead><tbody>`;
+D.stops.forEach((s,i)=>{if(s.standby)return;
+  const stopAct=D.ex.filter(e=>{const st=_stopAt(e.date);return st&&st.id===s.id}).reduce((a,e)=>a+(+e.rmAmt||0),0);
+  const stopPlan=cc(s);
+  sumTotPlan+=stopPlan;sumTotAct+=stopAct;
+  const diff=stopAct?stopAct-stopPlan:null;
+  const diffCol=diff===null?'var(--t2)':diff>0?'var(--red)':'var(--grn)';
+  const diffStr=diff===null?'—':(diff>0?'+':'')+fm(diff);
+  const ti=tI(s.tt||'bus');
+  h+=`<tr><td>${i+1}</td><td>${fD(s.date)}</td><td><strong style="color:${CCOUNTRY[s.co]||'var(--acc)'}">${exEsc(s.ci)}</strong></td><td>${exEsc(s.co)}</td><td>${s.days}</td><td title="${exEsc(s.tr||'')}">${ti} ${s.ts==='confirmed'?'✓':'?'}</td><td>${fm(stopPlan)}</td><td style="color:${stopAct>stopPlan?'var(--red)':stopAct>0?'var(--grn)':'var(--t2)'}">${stopAct?fm(stopAct):'—'}</td><td style="color:${diffCol};font-weight:600">${diffStr}</td></tr>`;
+});
+const totDiff=sumTotAct-sumTotPlan;
+h+=`<tr style="border-top:2px solid var(--bdr);font-weight:700;background:var(--s2)"><td colspan="6" style="text-align:right">总计</td><td>${fm(sumTotPlan)}</td><td style="color:var(--acc2)">${fm(sumTotAct)}</td><td style="color:${sumTotAct?(totDiff>0?'var(--red)':'var(--grn)'):'var(--t2)'}">${sumTotAct?(totDiff>0?'+':'')+fm(totDiff):'—'}</td></tr>`;
+h+=`</tbody></table></div>
+<div style="font-size:.7rem;color:var(--t2);margin-top:8px">💡 点上方「📋 复制 Summary」可导出 markdown 文本（含差额），方便贴去 Notes/IG/分享。</div></div>`;
+
+// === Categories management ===
+h+=`<div class="c"><div class="ct">⚙️ 类别管理</div>
+<div style="display:flex;flex-direction:column;gap:6px">${getExCats().map(c=>{const used=D.ex.filter(e=>e.cat===c.k).length;const isDef=EX_CATS_DEFAULT.find(d=>d.k===c.k);return `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--s2);border-radius:6px"><span style="width:12px;height:12px;border-radius:50%;background:${c.c};flex-shrink:0"></span><span style="flex:1;font-size:.85rem">${c.n}</span><span style="font-size:.7rem;color:var(--t2)">${used} 笔</span>${isDef?'<span style="font-size:.66rem;color:var(--t2)">默认</span>':`<button class="bg" style="color:var(--red)" onclick="exDelCat('${c.k}')">×</button>`}</div>`}).join('')}</div>
+<button class="btn bs bsm" style="margin-top:8px" onclick="exAddCat()">+ 新增类别</button>
+<div style="font-size:.7rem;color:var(--t2);margin-top:6px">默认类别跟 Budget 对齐（食/住/城际/本地/门票/其他），不可删。自定义类别（如「购物」「社交」）可加可删。</div></div>`;
+
+el.innerHTML=h;
+};
+window.acSetView=v=>{_acView=v;R.actual()};
+window.acFilter=(f,v)=>{if(f==='from')_acFrom=v;else if(f==='to')_acTo=v;else if(f==='cat')_acFCat=v;else if(f==='clear'){_acFrom='';_acTo='';_acFCat=''}R.actual()};
+window.exAddCat=()=>{const n=prompt('新类别名称(可加 emoji，如 🛍️ 购物):');if(!n||!n.trim())return;const k='c'+Date.now();if(!D.exCats)D.exCats=[];D.exCats.push({k,n:n.trim(),c:'#a89aa5'});sv();R.actual()};
+window.exExportMd=()=>{const planTot=tAll(),actTot=_exTotalRm(D.ex);
+let md=`# EZ 环游世界梦 · 旅程 Summary\n\n`;
+md+=`**出发**: ${D.sd}\n**总天数**: ${tDays()} 天\n**站点**: ${D.stops.filter(s=>!s.standby).length}\n**国家**: ${new Set(D.stops.filter(s=>!s.standby).map(s=>s.co)).size}\n**总计划**: ${fm(planTot)}\n**已实际**: ${fm(actTot)}\n**进度**: ${(actTot/planTot*100).toFixed(1)}%\n\n## 行程\n\n`;
+D.stops.forEach((s,i)=>{if(s.standby)return;const stopAct=D.ex.filter(e=>{const st=_stopAt(e.date);return st&&st.id===s.id}).reduce((a,e)=>a+(+e.rmAmt||0),0);const stopPlan=cc(s);const diff=stopAct?stopAct-stopPlan:null;const diffStr=diff===null?'':` · 差额 ${diff>0?'+':''}${fm(diff)}`;md+=`${i+1}. **${s.date}** · ${s.ci}, ${s.co} · ${s.days}天 · ${tI(s.tt||'bus')} ${s.tr||''} · 计划 ${fm(stopPlan)}${stopAct?` / 实际 ${fm(stopAct)}${diffStr}`:''}\n`});
+md+=`\n## 类别总览\n\n`;
+const cm={};getExCats().forEach(c=>cm[c.k]={n:c.n,plan:0,act:0});
+D.stops.forEach(s=>{if(s.standby)return;cm.tr.plan+=(s.tc||0);cm.food.plan+=s.days*(s.food||0);cm.stay.plan+=s.days*(s.stay||0);cm.lt.plan+=s.days*(s.lt||0);cm.tick.plan+=s.days*(s.tick||0);cm.oth.plan+=(s.oth||0)});
+D.ex.forEach(e=>{if(cm[e.cat])cm[e.cat].act+=(+e.rmAmt||0)});
+Object.values(cm).forEach(r=>{md+=`- ${r.n}: 计划 ${fm(r.plan)} / 实际 ${fm(r.act)}\n`});
+navigator.clipboard.writeText(md).then(()=>{if(typeof tToast==='function')tToast('已复制 markdown 到剪贴板');else alert('已复制到剪贴板')}).catch(()=>{prompt('复制下面文字：',md)})};
+window.exExportCsv=()=>{const rows=[['date','time','category','desc','localAmt','localCcy','rmAmt','stop']];
+D.ex.forEach(e=>{const s=_stopAt(e.date);rows.push([e.date,e.time||'',getExCat(e.cat).n,(e.desc||'').replace(/"/g,'""'),e.localAmt,e.localCcy,(+e.rmAmt||0).toFixed(2),s?s.ci+', '+s.co:''])});
+const csv=rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
+const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='ez-expenses-'+new Date().toISOString().substring(0,10)+'.csv';a.click();URL.revokeObjectURL(url)};
+
 // ============ CHECKLIST ============
 let ckF='all';
 R.checklist=function(){
@@ -696,25 +948,28 @@ let h=`<h2>✅ Checklist & 代办</h2>`;
 
 // TODO section — drag columns
 const tdDone=D.td.filter(x=>x.dn),tdUndone=D.td.filter(x=>!x.dn);
-h+=`<div class="c"><div class="fb"><div class="ct" style="margin:0">📋 代办事项 <span style="font-size:.72rem;color:var(--t2);font-weight:400">${tdDone.length}/${D.td.length} 完成 · 拖动切换状态</span></div>
+// Sort undone: by deadline asc (overdue/today first), no-deadline at bottom
+tdUndone.sort((a,b)=>{const ua=tdUrgency(a.dl),ub=tdUrgency(b.dl);if(ua&&ub)return ua.sort-ub.sort;if(ua)return -1;if(ub)return 1;return b.id-a.id});
+const overdueCount=tdUndone.filter(t=>{const u=tdUrgency(t.dl);return u&&u.sort<=0}).length;
+h+=`<div class="c"><div class="fb"><div class="ct" style="margin:0">📋 代办事项 <span style="font-size:.72rem;color:var(--t2);font-weight:400">${tdDone.length}/${D.td.length} 完成${overdueCount?` · <span style="color:var(--red);font-weight:700">⚠️ ${overdueCount} 待处理</span>`:''} · 拖动切换状态</span></div>
 <button class="btn bp bsm" onclick="aT()">+ 添加</button></div>
 <div class="g2" style="margin-top:10px">
 <div id="td-undone" style="min-height:60px;padding:8px;border-radius:10px;background:var(--orgL);border:1px dashed var(--org)" ondragover="event.preventDefault();this.style.background='rgba(200,155,106,.2)'" ondragleave="this.style.background='var(--orgL)'" ondrop="tdDrop(event,false)">
 <div style="font-size:.72rem;font-weight:600;color:var(--org);margin-bottom:6px">⏳ 未完成 (${tdUndone.length})</div>
-${tdUndone.map(t=>`<div class="todo" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${t.id}')">
+${tdUndone.map(t=>{const u=tdUrgency(t.dl);return `<div class="todo" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${t.id}')"${u?` style="background:${u.bg}"`:''}>
 <span style="cursor:grab;color:var(--t3)">⠿</span>
-<span style="flex:1">${t.it}</span>
+<span style="flex:1">${t.it}${u?` <span style="font-size:.66rem;font-weight:700;color:${u.col};background:${u.bg};padding:2px 6px;border-radius:4px;margin-left:4px">📅 ${u.lbl}</span>`:''}</span>
 <button class="bg" onclick="eT(${t.id})">✏️</button>
-<button class="bg" style="color:var(--red)" onclick="D.td=D.td.filter(x=>x.id!==${t.id});sv();R.checklist()">×</button>
-</div>`).join('')}
+<button class="bg" style="color:var(--red)" onclick="if(confirm('删除?')){D.td=D.td.filter(x=>x.id!==${t.id});sv();R.checklist()}">×</button>
+</div>`}).join('')}
 </div>
 <div id="td-done" style="min-height:60px;padding:8px;border-radius:10px;background:var(--grnL);border:1px dashed var(--grn)" ondragover="event.preventDefault();this.style.background='rgba(106,171,144,.2)'" ondragleave="this.style.background='var(--grnL)'" ondrop="tdDrop(event,true)">
 <div style="font-size:.72rem;font-weight:600;color:var(--grn);margin-bottom:6px">✅ 已完成 (${tdDone.length})</div>
 ${tdDone.map(t=>`<div class="todo done" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${t.id}')">
 <span style="cursor:grab;color:var(--t3)">⠿</span>
-<span style="flex:1;text-decoration:line-through">${t.it}</span>
+<span style="flex:1;text-decoration:line-through">${t.it}${t.dl?` <span style="font-size:.66rem;color:var(--t2);margin-left:4px">📅 ${fD(t.dl)}</span>`:''}</span>
 <button class="bg" onclick="eT(${t.id})">✏️</button>
-<button class="bg" style="color:var(--red)" onclick="D.td=D.td.filter(x=>x.id!==${t.id});sv();R.checklist()">×</button>
+<button class="bg" style="color:var(--red)" onclick="if(confirm('删除?')){D.td=D.td.filter(x=>x.id!==${t.id});sv();R.checklist()}">×</button>
 </div>`).join('')}
 </div></div></div>`;
 
@@ -742,10 +997,12 @@ if(undone.length)h+=`<div class="rem">⚠️ 还有 <strong>${D.td.filter(x=>!x.
 el.innerHTML=h;
 };
 window.aT=()=>{openM(`<h3>+代办</h3><div class="fr"><label>事项</label><input id="nt-it"></div>
-<div class="ma"><button class="btn bs" onclick="closeM()">取消</button><button class="btn bp" onclick="D.td.push({id:Date.now(),it:document.getElementById('nt-it').value,dn:false});sv();closeM();R.checklist()">添加</button></div>`)};
+<div class="fr"><label>截止日期 (可选)</label><input id="nt-dl" type="date"></div>
+<div class="ma"><button class="btn bs" onclick="closeM()">取消</button><button class="btn bp" onclick="D.td.push({id:Date.now(),it:document.getElementById('nt-it').value,dl:document.getElementById('nt-dl').value||'',dn:false});sv();closeM();R.checklist()">添加</button></div>`)};
 window.eT=id=>{const t=D.td.find(x=>x.id===id);
-openM(`<h3>编辑</h3><div class="fr"><label>事项</label><input id="et-it" value="${t.it}"></div>
-<div class="ma"><button class="btn bs" onclick="closeM()">取消</button><button class="btn bp" onclick="D.td.find(x=>x.id===${id}).it=document.getElementById('et-it').value;sv();closeM();R.checklist()">保存</button></div>`)};
+openM(`<h3>编辑代办</h3><div class="fr"><label>事项</label><input id="et-it" value="${(t.it||'').replace(/"/g,'&quot;')}"></div>
+<div class="fr"><label>截止日期 (可选)</label><input id="et-dl" type="date" value="${t.dl||''}"></div>
+<div class="ma"><button class="btn bd" style="margin-right:auto" onclick="if(confirm('删除?')){D.td=D.td.filter(x=>x.id!==${id});sv();closeM();R.checklist()}">删除</button><button class="btn bs" onclick="closeM()">取消</button><button class="btn bp" onclick="const t=D.td.find(x=>x.id===${id});t.it=document.getElementById('et-it').value;t.dl=document.getElementById('et-dl').value||'';sv();closeM();R.checklist()">保存</button></div>`)};
 window.tdDrop=(e,done)=>{e.preventDefault();e.currentTarget.style.background=done?'var(--grnL)':'var(--orgL)';const id=+e.dataTransfer.getData('text/plain');const t=D.td.find(x=>x.id===id);if(t){t.dn=done;sv();R.checklist()}};
 window.aCk=()=>{openM(`<h3>+清单</h3>
 <div class="fr"><label>类别</label><select id="nc-cat"><option>Clothes</option><option>Doc</option><option>Others</option><option>Work</option><option>外套</option><option>护肤</option><option>药</option><option>衣服</option><option>裤子</option><option>鞋子</option></select></div>
@@ -1122,9 +1379,9 @@ document.getElementById('map-list').innerHTML=listH;
 // ============ CURRENCY ============
 R.currency=function(){
 const el=document.getElementById('pg-currency');
-const rates={'MYR':1,'NPR':28.5,'INR':19.5,'KZT':103,'KGS':19.1,'GEL':0.58,'AMD':85,'BGN':0.39,'RON':1.02,'RSD':23.5,'EUR':0.21,'BAM':0.39,'TRY':8.3,'USD':0.23,'GBP':0.17};
-const cNames={'MYR':'🇲🇾 马来西亚 Ringgit','NPR':'🇳🇵 尼泊尔 Rupee','INR':'🇮🇳 印度 Rupee','KZT':'🇰🇿 哈萨克 Tenge','KGS':'🇰🇬 吉尔吉斯 Som','GEL':'🇬🇪 格鲁吉亚 Lari','AMD':'🇦🇲 亚美尼亚 Dram','BGN':'🇧🇬 保加利亚 Lev','RON':'🇷🇴 罗马尼亚 Leu','RSD':'🇷🇸 塞尔维亚 Dinar','EUR':'🇪🇺 欧元','BAM':'🇧🇦 波黑 Mark','TRY':'🇹🇷 土耳其 Lira','USD':'🇺🇸 美元','GBP':'🇬🇧 英镑'};
-const coMap={'Nepal':'NPR','India':'INR','Kazakhstan':'KZT','Kyrgyzstan':'KGS','Georgia':'GEL','Armenia':'AMD','Bulgaria':'BGN','Romania':'RON','Serbia':'RSD','Montenegro':'EUR','Bosnia':'BAM','Slovenia':'EUR','Austria':'EUR','Spain':'EUR','Portugal':'EUR','North Macedonia':'MKD','China':'CNY','Hong Kong':'HKD','Macau':'MOP','Azerbaijan':'AZN','Albania':'ALL','Italy':'EUR','Croatia':'EUR','Czech Republic':'CZK','Poland':'PLN'};
+const rates=RATES;
+const cNames=CCY_NAMES;
+const coMap=CO_CCY;
 const tripCur=[...new Set(D.stops.map(s=>coMap[s.co]).filter(Boolean))];
 
 let h=`<h2>💱 汇率转换器 <span style="font-size:.72rem;color:var(--t2);font-weight:400">参考汇率 · 出发前请更新</span></h2>`;
@@ -1176,7 +1433,7 @@ el.innerHTML=h;
 setTimeout(cxCalc,10);
 };
 window.cxCalc=(side)=>{
-const rates={'MYR':1,'NPR':28.5,'INR':19.5,'KZT':103,'KGS':19.1,'GEL':0.58,'AMD':85,'BGN':0.39,'RON':1.02,'RSD':23.5,'EUR':0.21,'BAM':0.39,'TRY':8.3,'USD':0.23,'GBP':0.17};
+const rates=RATES;
 const fromC=document.getElementById('cx-from')?.value||'MYR';
 const toC=document.getElementById('cx-to')?.value||'EUR';
 const lEl=document.getElementById('cx-left');
