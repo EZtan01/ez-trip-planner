@@ -1250,9 +1250,23 @@ Ljubljana:[46.0569,14.5058],Bovec:[46.3381,13.5522],Bolzano:[46.4983,11.3548],
 Vienna:[48.2082,16.3738],'Kraków':[50.0647,19.945],Zakopane:[49.299,19.9496],
 Barcelona:[41.3874,2.1686],Madrid:[40.4168,-3.7038],Granada:[37.1773,-3.5986],
 Lisbon:[38.7223,-9.1393],Porto:[41.1579,-8.6291],Madeira:[32.6669,-16.9241],
-JB:[1.4927,103.7414],Bucharest:[44.4268,26.1025],'Brașov':[45.6427,25.5887],
+JB:[1.4927,103.7414],KL:[3.139,101.6869],Penang:[5.4141,100.3288],Singapore:[1.3521,103.8198],
+Bucharest:[44.4268,26.1025],'Brașov':[45.6427,25.5887],
 Sibiu:[45.7983,24.1256],'Timișoara':[45.7489,21.2087],Belgrade:[44.7866,20.4489],
-Zlatibor:[43.7311,19.703],Prague:[50.0755,14.4378],Riga:[56.9496,24.1052]};
+Zlatibor:[43.7311,19.703],Prague:[50.0755,14.4378],Riga:[56.9496,24.1052],
+Bandipur:[27.9358,84.4133],Nagarkot:[27.7146,85.5208],Chitwan:[27.5291,84.3542],
+'乌鲁木齐':[43.8256,87.6168],'喀什':[39.4704,75.9897],'伊犁':[43.9148,81.3240],
+Batumi:[41.6168,41.6367],Mestia:[43.0432,42.7305],Kazbegi:[42.6597,44.6394],
+Signagi:[41.6196,45.9219],Ushguli:[42.9197,42.6981],
+'Veliko Tarnovo':[43.0757,25.6172],Varna:[43.2141,27.9147],Belogradchik:[43.6256,22.6849],
+'Novi Sad':[45.2671,19.8335],'Niš':[43.3209,21.8958],
+Jajce:[44.3403,17.2728],'Banja Luka':[44.7722,17.1910],
+Warsaw:[52.2297,21.0122],'Wrocław':[51.1079,17.0385],Szczawnica:[49.4248,20.4868],
+Sigulda:[57.1538,24.8593],'Cēsis':[57.3128,25.2706],'Kuldīga':[56.9676,21.9748],
+Sintra:[38.8029,-9.3817],Lagos:[37.1028,-8.6747],
+Dubrovnik:[42.6507,18.0944],Split:[43.5081,16.4402],Zagreb:[45.8150,15.9819],
+Skopje:[41.9981,21.4254],Bitola:[41.0297,21.3343],
+Budapest:[47.4979,19.0402],Istanbul:[41.0082,28.9784],Cappadocia:[38.6431,34.8307]};
 const REGZONES=[
 {n:'🏔️ 南亚',col:'#c87b62',center:[27.5,82],bounds:[[25,74],[30,88]]},
 {n:'🐴 中亚',col:'#6a96b5',center:[43,77],bounds:[[40,73],[45,81]]},
@@ -1388,8 +1402,9 @@ L.marker(rz.center,{icon:labelIcon,interactive:false}).addTo(_map);
 const active=D.stops.filter(s=>!s.standby);
 const standby=D.stops.filter(s=>s.standby);
 _mapStops=[];let n=0;
+const _missingCoords=[];
 active.forEach((s,i)=>{
-const c=COORDS[s.ci];if(!c)return;n++;
+const c=COORDS[s.ci];if(!c){_missingCoords.push(s.ci+' ('+s.co+')');console.warn('地图缺坐标:',s.ci,s.co,'— 加到 COORDS 才能显示');return}n++;
 const col=CCOUNTRY[s.co]||'#c87b62';
 const reg=getRegion(s.co);
 const sz=Math.min(30,Math.max(18,s.days*1.2+10));
@@ -1447,6 +1462,7 @@ listH+=`<div style="display:inline-flex;align-items:center;gap:4px;padding:4px 1
 });
 if(curReg)listH+='</div></div>';
 document.getElementById('map-list').innerHTML=listH;
+if(_missingCoords.length){const mi=document.getElementById('map-info');if(mi)mi.innerHTML=`⚠️ <strong style="color:var(--org)">${_missingCoords.length} 个站点未显示</strong>（缺坐标）: ${_missingCoords.join('、')} — 点击 ▶ 开始飞行动画 · 点击板块跳转区域`}
 }
 
 // ============ CURRENCY ============
