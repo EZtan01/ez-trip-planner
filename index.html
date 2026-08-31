@@ -1537,7 +1537,7 @@ tick();
 }
 function initMap(){
 if(typeof L==='undefined'){setTimeout(initMap,200);return}
-_map=L.map('mapC',{scrollWheelZoom:true,zoomControl:true}).setView([43,20],4);
+_map=L.map('mapC',{scrollWheelZoom:true,zoomControl:true}).setView([30,80],2);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
 attribution:'OpenStreetMap | CartoDB',maxZoom:18,subdomains:'abcd'}).addTo(_map);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',{
@@ -1612,6 +1612,11 @@ listH+=`<div style="display:inline-flex;align-items:center;gap:4px;padding:4px 1
 });
 if(curReg)listH+='</div></div>';
 document.getElementById('map-list').innerHTML=listH;
+// AUTO_FIT_ADDED: fit map bounds to all active stops
+if(_mapStops&&_mapStops.length){
+  const coords=_mapStops.map(s=>COORDS[s.ci]).filter(Boolean);
+  if(coords.length>=2){setTimeout(()=>{_map.fitBounds(coords,{padding:[40,40],maxZoom:5})},100)}
+}
 if(_missingCoords.length){const mi=document.getElementById('map-info');if(mi)mi.innerHTML=`⚠️ <strong style="color:var(--org)">${_missingCoords.length} 个站点未显示</strong>（缺坐标）: ${_missingCoords.join('、')} — 点击 ▶ 开始飞行动画 · 点击板块跳转区域`}
 }
 
