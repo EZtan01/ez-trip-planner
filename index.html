@@ -170,6 +170,23 @@ h2{font-size:1.25rem;font-weight:800;margin-bottom:18px;color:var(--acc2)}
 @supports(height:100dvh){
   .mbg{height:100dvh}
 }
+
+/* CAL_MOBILE_FIX */
+@media(max-width:520px){
+  .cal-day{min-height:56px!important;padding:3px 3px;font-size:.65rem}
+  .cal-day > div:first-child span{font-size:.72rem!important}
+  .cal-day > div:not(:first-child){font-size:.6rem!important;line-height:1.15}
+}
+@media(max-width:380px){
+  .cal-day{min-height:52px!important;padding:2px 2px}
+  .cal-day > div:first-child span{font-size:.68rem!important}
+  .cal-day > div:not(:first-child){font-size:.58rem!important}
+}
+/* Force calendar container to fill width on mobile */
+@media(max-width:520px){
+  #pg-calendar>div>div[style*="grid-template-columns:repeat(7,1fr)"]{gap:2px!important}
+  #pg-calendar h2{font-size:1rem!important}
+}
 </style>
 </head>
 <body>
@@ -732,7 +749,7 @@ if(!D.stops.length){el.innerHTML='<h2>📅</h2>';return}
 const dm={};D.stops.forEach(s=>{if(s.standby||!s.date)return;const d=new Date(s.date);for(let i=0;i<s.days;i++){dm[d.toISOString().split('T')[0]]=s;d.setDate(d.getDate()+1)}});
 const activeStops=D.stops.filter(s=>!s.standby&&s.date);if(!activeStops.length){el.innerHTML='<h2>📅</h2>';return}const endS=activeStops[activeStops.length-1],end=new Date(endS.date);end.setDate(end.getDate()+endS.days);
 let h=`<h2>📅 日历视图 <span style="font-size:.78rem;color:var(--t2);font-weight:400">点击编辑行程</span></h2>`;
-let cur=new Date(2027,0,1);
+let cur;{const sd=new Date((D.sd||'2026-10-04')+'T12:00:00');cur=new Date(sd.getFullYear(),sd.getMonth(),1)}
 while(cur<=end){
 const y=cur.getFullYear(),m=cur.getMonth();
 h+=`<div style="margin-bottom:18px"><div style="font-size:1rem;font-weight:700;color:var(--acc2);margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid var(--acc)">${cur.toLocaleDateString('en',{month:'long',year:'numeric'})}</div>

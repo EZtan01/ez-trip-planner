@@ -1,6 +1,6 @@
 // EZ Trip Planner — Service Worker
 // Stale-while-revalidate: serve cache instantly, update in background
-const CACHE_NAME = 'ez-trip-v33';
+const CACHE_NAME = 'ez-trip-v34';
 const ASSETS = [
   './',
   './index.html',
