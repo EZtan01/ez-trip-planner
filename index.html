@@ -1624,10 +1624,8 @@ tick();
 function initMap(){
 if(typeof L==='undefined'){setTimeout(initMap,200);return}
 _map=L.map('mapC',{scrollWheelZoom:true,zoomControl:true}).setView([30,80],2);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
-attribution:'OpenStreetMap | CartoDB',maxZoom:18,subdomains:'abcd'}).addTo(_map);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',{
-maxZoom:18,subdomains:'abcd',pane:'shadowPane'}).addTo(_map);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+attribution:'&copy; OpenStreetMap contributors',maxZoom:19}).addTo(_map);
 REGZONES.forEach(rz=>{
 L.rectangle(rz.bounds,{color:rz.col,weight:2,opacity:0.5,fillColor:rz.col,fillOpacity:0.07,dashArray:'8,4',interactive:false}).addTo(_map);
 const labelIcon=L.divIcon({className:'',
